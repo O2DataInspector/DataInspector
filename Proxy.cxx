@@ -11,6 +11,11 @@ using messages_queue = std::queue<std::string>;
 
 /* ENDPOINTS */
 constexpr char RAW_DATA_ENDPOINT[] = "/raw-data";
+constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
+constexpr char INSPECTED_DATA_ENDPOINT[]    = "/inspected-data";
+constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
+constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
+constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
 
 /* TIMEOUTS */
 constexpr long DPLS_BROADCASTER_POLL_TIMEOUT = 1000;
@@ -97,29 +102,58 @@ int main(int argc, char* argv[]) {
     auto client_thread = std::thread{[&messages, &messages_mutex]() -> void{ receive(messages, messages_mutex); }};
 
     httplib::Server handle;
-    handle.Get(RAW_DATA_ENDPOINT,
-               [&messages, &messages_mutex](const httplib::Request& input, httplib::Response& output) {
-                   std::stringstream ss;
-                   messages_mutex.lock();
-                   while(!messages.empty()) {
-                       ss << messages.front();
-                       messages.pop();
-
-                       if(!messages.empty())
-                           ss << ",\n";
-                   }
-                   messages_mutex.unlock();
-
-                   auto data = ss.str();
-                   output.set_content("[" + data + "]", "application/json");
+    handle.Get(AVAILABLE_DEVICES_ENDPOINT,
+               [](const httplib::Request& input, httplib::Response& output) {
+                   std::string joined_names = "reader\ntpc-cluster-summary\nits-cluster-summary\nmerger\n";
+                   output.set_content(joined_names, "text/plain");
                }
     );
+    handle.Get(INSPECTED_DATA_ENDPOINT,
+               [&messages, &messages_mutex](const httplib::Request& input, httplib::Response& output) {
+                    std::cout<<"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"<<std::endl;
+                   if (input.has_header("devices") && input.has_header("count")) {
+                       //std::string devices = input.get_header_value("devices");
+                       int count = std::stoi(input.get_header_value("count"));
+
+                       std::stringstream ss;
+                       messages_mutex.lock();
+                       while(!messages.empty() && count > 0) {
+                           count--;
+                           ss << messages.front();
+                           messages.pop();
+
+                           if(count > 0)
+                               ss << ",\n";
+                       }
+                       messages_mutex.unlock();
+
+                       auto data = ss.str();
+                       output.set_content("[" + data + "]", "application/json");
+                   }
+               }
+    );
+    handle.Get(STOP_INSPECTION_ENDPOINT,
+               [&handle](const httplib::Request& input, httplib::Response& output) {
+                   handle.stop();
+               }
+    );
+    handle.Get(SELECT_DEVICES_ENDPOINT,
+               [](const httplib::Request& input, httplib::Response& output) {
+               }
+    );
+    handle.Get(SELECT_ALL_ENDPOINT,
+               [](const httplib::Request& input, httplib::Response& output) {
+               }
+    );
+    handle.set_pre_routing_handler([](const httplib::Request &input, httplib::Response &output) -> httplib::SSLServer::HandlerResponse{
+        output.set_header("Access-Control-Allow-Methods", "*");
+        output.set_header("Access-Control-Allow-Headers", "*");
+        output.set_header("Access-Control-Allow-Origin", "*");
+        return httplib::Server::HandlerResponse::Unhandled;
+    });
     handle.Options("/(.*)",
                    [&](const httplib::Request& input, httplib::Response& output) {
-                       output.set_header("Access-Control-Allow-Methods", " POST, GET, OPTIONS");
                        output.set_header("Content-Type", "text/html; charset=utf-8");
-                       output.set_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Accept");
-                       output.set_header("Access-Control-Allow-Origin", "*");
                        output.set_header("Connection", "close");
                    });
 
