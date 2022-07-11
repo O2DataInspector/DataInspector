@@ -7,8 +7,6 @@
 #include "boost/asio.hpp"
 #include "httplib.h"
 
-using messages_queue = std::queue<std::string>;
-
 /* ENDPOINTS */
 constexpr char RAW_DATA_ENDPOINT[] = "/raw-data";
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -45,19 +43,25 @@ static void fromLE(const char* le, uint32_t* n) {
 struct DIPacket {
     struct Header {
         static const uint32_t HEADER_SIZE = 12;
-        enum class Type : uint32_t {
-            DATA = 1
-        };
 
         char type[4];
         char payloadSize[8];
     };
-
-    Header header;
-    char* payload;
 };
 
-void receive(messages_queue& messages, std::mutex& messages_mutex) {
+struct Message {
+    enum class Type : uint32_t {
+        DATA = 1,
+        REGISTER_DEVICE = 2
+    };
+
+    Type type;
+    std::string payload;
+};
+
+using messages_queue = std::queue<Message>;
+
+void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<std::string>& devices) {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 8081));
     auto socket = acceptor.accept();
@@ -76,7 +80,7 @@ void receive(messages_queue& messages, std::mutex& messages_mutex) {
 
         uint64_t payloadSize;
         fromLE(header.payloadSize, &payloadSize);
-        char payload[payloadSize];
+        char* payload = new char[payloadSize];
 
         uint64_t read = 0;
         while(read < payloadSize) {
@@ -89,17 +93,31 @@ void receive(messages_queue& messages, std::mutex& messages_mutex) {
         else if (error)
             throw boost::system::system_error(error); // Some other error.
 
+        Message msg = {
+                .payload = std::string{payload, payloadSize},
+        };
+
+        uint32_t type;
+        fromLE(reinterpret_cast<const char *>(&header.type), &type);
+        msg.type = static_cast<Message::Type>(type);
+
+        if (msg.type == Message::Type::REGISTER_DEVICE) {
+            devices.push_back(msg.payload);
+            std::cout << "ADD DEVICE: " << msg.payload << std::endl;
+        }
+
         messages_mutex.lock();
-        messages.push(std::string{payload, payloadSize});
+        messages.push(std::move(msg));
         messages_mutex.unlock();
     }
 }
 
 int main(int argc, char* argv[]) {
     messages_queue messages;
+    std::vector<std::string> devices;
     std::mutex messages_mutex;
 
-    auto client_thread = std::thread{[&messages, &messages_mutex]() -> void{ receive(messages, messages_mutex); }};
+    auto client_thread = std::thread{[&messages, &messages_mutex, &devices]() -> void{ receive(messages, messages_mutex, devices); }};
 
     httplib::Server handle;
     handle.Get(AVAILABLE_DEVICES_ENDPOINT,
@@ -119,7 +137,7 @@ int main(int argc, char* argv[]) {
                        messages_mutex.lock();
                        while(!messages.empty() && count > 0) {
                            count--;
-                           ss << messages.front();
+                           ss << messages.front().payload;
                            messages.pop();
 
                            if(count > 0)
