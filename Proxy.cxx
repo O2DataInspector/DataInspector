@@ -105,10 +105,11 @@ void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<s
             devices.push_back(msg.payload);
             std::cout << "ADD DEVICE: " << msg.payload << std::endl;
         }
-
-        messages_mutex.lock();
-        messages.push(std::move(msg));
-        messages_mutex.unlock();
+        else{
+            messages_mutex.lock();
+            messages.push(std::move(msg));
+            messages_mutex.unlock();
+        }
     }
 }
 
@@ -146,6 +147,7 @@ int main(int argc, char* argv[]) {
                        messages_mutex.unlock();
 
                        auto data = ss.str();
+                       std::cout<<data<<"\n";
                        output.set_content("[" + data + "]", "application/json");
                    }
                }
