@@ -4,8 +4,8 @@
 #include <unordered_map>
 
 #include "looped_task.hpp"
-#include "boost/asio.hpp"
 #include "httplib.h"
+#include "DISocket.hpp"
 
 /* ENDPOINTS */
 constexpr char RAW_DATA_ENDPOINT[] = "/raw-data";
@@ -22,95 +22,27 @@ constexpr long PROXY_POLL_TIMEOUT            = 1000;
 /* CONSTANTS */
 constexpr long MAX_LENGTH = 1 << 16;
 
-static void fromLE(const char* le, uint64_t* n) {
-    *n = ((uint64_t) ((uint8_t) le[7]) << 56);
-    *n += ((uint64_t) ((uint8_t) le[6]) << 48);
-    *n += ((uint64_t) ((uint8_t) le[5]) << 40);
-    *n += ((uint64_t) ((uint8_t) le[4]) << 32);
-    *n += ((uint64_t) ((uint8_t) le[3]) << 24);
-    *n += ((uint64_t) ((uint8_t) le[2]) << 16);
-    *n += ((uint64_t) ((uint8_t) le[1]) << 8);
-    *n += ((uint64_t) (uint8_t) le[0]);
-}
-
-static void fromLE(const char* le, uint32_t* n) {
-    *n = ((uint64_t) le[3] << 24)
-    + ((uint64_t) le[2] << 16)
-    + ((uint64_t) le[1] << 8)
-    + (uint64_t) le[0];
-}
-
-struct DIPacket {
-    struct Header {
-        static const uint32_t HEADER_SIZE = 12;
-
-        char type[4];
-        char payloadSize[8];
-    };
-};
-
-struct Message {
-    enum class Type : uint32_t {
-        DATA = 1,
-        REGISTER_DEVICE = 2
-    };
-
-    Type type;
-    std::string payload;
-};
-
-using messages_queue = std::queue<Message>;
+using messages_queue = std::queue<DIMessage>;
 
 void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<std::string>& devices) {
-    boost::asio::io_context io_context;
-    boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 8081));
-    auto socket = acceptor.accept();
+    DIAcceptor acceptor(8081);
+    acceptor.start([&messages, &messages_mutex, &devices](DISocket& socket) -> void{
+        std::cout<<"CONNECTED"<<std::endl;
+        while (true) {
+            auto msg = socket.receive();
+            std::cout<<msg.payload<<std::endl;
 
-    for (;;)
-    {
-        DIPacket::Header header{};
-
-        boost::system::error_code error;
-        size_t length = socket.read_some(boost::asio::buffer(&header, DIPacket::Header::HEADER_SIZE), error);
-
-        if (error == boost::asio::error::eof)
-            break; // Connection closed cleanly by peer.
-        else if (error)
-            throw boost::system::system_error(error); // Some other error.
-
-        uint64_t payloadSize;
-        fromLE(header.payloadSize, &payloadSize);
-        char* payload = new char[payloadSize];
-
-        uint64_t read = 0;
-        while(read < payloadSize) {
-            length = socket.read_some(boost::asio::buffer(payload + read, payloadSize - read), error);
-            read += length;
+            if(msg.header.type == DIMessage::Header::Type::REGISTER_DEVICE) {
+                devices.push_back(msg.payload);
+                continue;
+            }
+            else{
+                messages_mutex.lock();
+                messages.push(std::move(msg));
+                messages_mutex.unlock();
+            }
         }
-
-        if (error == boost::asio::error::eof)
-            break; // Connection closed cleanly by peer.
-        else if (error)
-            throw boost::system::system_error(error); // Some other error.
-
-        Message msg = {
-                .payload = std::string{payload, payloadSize},
-        };
-
-        uint32_t type;
-        fromLE(reinterpret_cast<const char *>(&header.type), &type);
-        msg.type = static_cast<Message::Type>(type);
-
-        if (msg.type == Message::Type::REGISTER_DEVICE) {
-            devices.push_back(msg.payload);
-            std::cout << "ADD DEVICE: " << msg.payload << std::endl;
-        }
-        else{
-            messages_mutex.lock();
-            messages.push(std::move(msg));
-            messages_mutex.unlock();
-        }
-    }
+    });
 }
 
 int main(int argc, char* argv[]) {
@@ -147,7 +79,6 @@ int main(int argc, char* argv[]) {
                        messages_mutex.unlock();
 
                        auto data = ss.str();
-                       std::cout<<data<<"\n";
                        output.set_content("[" + data + "]", "application/json");
                    }
                }
