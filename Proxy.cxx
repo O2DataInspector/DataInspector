@@ -7,6 +7,8 @@
 #include "httplib.h"
 #include "DISocket.hpp"
 
+#include "boost/algorithm/string.hpp"
+
 /* ENDPOINTS */
 constexpr char RAW_DATA_ENDPOINT[] = "/raw-data";
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -32,8 +34,8 @@ void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<s
             auto msg = socket.receive();
             std::cout<<msg.payload<<std::endl;
 
-            if(msg.header.type == DIMessage::Header::Type::REGISTER_DEVICE) {
-                devices.push_back(msg.payload);
+            if(msg.header.type == DIMessage::Header::Type::REGISTER_DEVICES) {
+                boost::split(devices, msg.payload, boost::is_any_of(":"));
                 continue;
             }
 
