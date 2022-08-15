@@ -38,10 +38,11 @@ void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<s
                 boost::split(devices, msg.payload, boost::is_any_of(":"));
                 continue;
             }
-
-            messages_mutex.lock();
-            messages.push(std::move(msg));
-            messages_mutex.unlock();
+            else{
+                messages_mutex.lock();
+                messages.push(std::move(msg));
+                messages_mutex.unlock();
+            }
         }
     });
 }
