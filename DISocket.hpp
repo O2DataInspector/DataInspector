@@ -49,11 +49,10 @@ struct DIMessage {
     struct Header {
         enum class Type : uint32_t {
             DATA = 1,
-            REGISTER_DEVICES = 2,
-            DEVICE_ON = 3,
-            DEVICE_OFF = 4,
-            INSPECT_ON = 5,
-            INSPECT_OFF = 6
+            DEVICE_ON = 2,
+            DEVICE_OFF = 3,
+            INSPECT_ON = 4,
+            INSPECT_OFF = 5
         };
 
         Header(Type type, uint64_t payloadSize) : type(type), payloadSize(payloadSize) {}
@@ -148,6 +147,10 @@ private:
 
     boost::asio::io_context ioContext;
     boost::asio::ip::tcp::acceptor acceptor;
+
+    struct Event {
+        int x;
+    };
 };
 
 #endif //DIPROXY_DISOCKET_HPP

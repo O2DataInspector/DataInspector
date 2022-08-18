@@ -17,55 +17,105 @@ constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
 
-/* TIMEOUTS */
-constexpr long DPLS_BROADCASTER_POLL_TIMEOUT = 1000;
-constexpr long PROXY_POLL_TIMEOUT            = 1000;
-
-/* CONSTANTS */
-constexpr long MAX_LENGTH = 1 << 16;
+struct Device {
+    std::string name;
+    DISocket& socket;
+};
 
 using messages_queue = std::queue<DIMessage>;
+using devices_list = std::vector<Device>;
 
-void receive(messages_queue& messages, std::mutex& messages_mutex, std::vector<std::string>& devices) {
+void handleDataInspector(DISocket& socket, messages_queue& messages, std::mutex& messages_mutex, devices_list& devices) {
+    while (true) {
+        auto msg = socket.receive();
+        std::cout << "MESSAGE RECEIVED" << std::endl;
+
+        messages_mutex.lock();
+        messages.push(std::move(msg));
+        messages_mutex.unlock();
+    }
+}
+
+void handleDevice(DISocket& socket) {
+    while (true) {
+        auto msg = socket.receive();
+        std::cout << "MESSAGE RECEIVED" << std::endl;
+
+        if(msg.header.type != DIMessage::Header::Type::DEVICE_OFF) {
+            std::cout << "WRONG MESSAGE TYPE";
+            return;
+        }
+
+        std::cout << msg.payload << " IS NOT ACTIVE" << std::endl;
+        return;
+    }
+}
+
+void receive(
+        messages_queue& messages,
+        std::mutex& messages_mutex,
+        devices_list& devices,
+        std::mutex& devices_mutex
+) {
     DIAcceptor acceptor(8081);
-    acceptor.start([&messages, &messages_mutex, &devices](DISocket& socket) -> void{
+    acceptor.start([&messages, &messages_mutex, &devices, &devices_mutex](DISocket& socket) -> void{
         std::cout<<"CONNECTED"<<std::endl;
-        while (true) {
-            auto msg = socket.receive();
-            std::cout<<msg.payload<<std::endl;
 
-            if(msg.header.type == DIMessage::Header::Type::REGISTER_DEVICES) {
-                boost::split(devices, msg.payload, boost::is_any_of(":"));
-                continue;
-            }
-            else{
-                messages_mutex.lock();
-                messages.push(std::move(msg));
-                messages_mutex.unlock();
-            }
+        auto initMsg = socket.receive();
+
+        if(initMsg.header.type != DIMessage::Header::Type::DEVICE_ON) {
+            std::cout << "WRONG MESSAGE TYPE";
+            return;
+        }
+
+        if(initMsg.payload == "DataInspector") {
+            std::cout << "DATA_INSPECTOR IS ACTIVE" << std::endl;
+            handleDataInspector(socket, messages, messages_mutex, devices);
+        } else {
+            std::cout << initMsg.payload << " IS ACTIVE" << std::endl;
+            devices_mutex.lock();
+            devices.push_back(Device{initMsg.payload, socket});
+            devices_mutex.unlock();
+
+            handleDevice(socket);
         }
     });
 }
 
 int main(int argc, char* argv[]) {
     messages_queue messages;
-    std::vector<std::string> devices;
     std::mutex messages_mutex;
 
-    auto client_thread = std::thread{[&messages, &messages_mutex, &devices]() -> void{ receive(messages, messages_mutex, devices); }};
+    devices_list devices;
+    std::mutex devices_mutex;
+
+    auto client_thread = std::thread{[&messages, &messages_mutex, &devices, &devices_mutex]() -> void{ receive(messages, messages_mutex, devices, devices_mutex); }};
 
     httplib::Server handle;
     handle.Get(AVAILABLE_DEVICES_ENDPOINT,
-               [](const httplib::Request& input, httplib::Response& output) {
-                   std::string joined_names = "reader\ntpc-cluster-summary\nits-cluster-summary\nmerger\n";
-                   output.set_content(joined_names, "text/plain");
+               [&devices, &devices_mutex](const httplib::Request& input, httplib::Response& output) {
+                    std::cout << "GET " << AVAILABLE_DEVICES_ENDPOINT << std::endl;
+
+                    devices_mutex.lock();
+
+                    std::vector<std::string> names{};
+                    for(auto& device : devices)
+                        names.push_back(device.name);
+
+                    std::string joined_names = boost::algorithm::join(names, "\n");
+                    output.set_content(joined_names, "text/plain");
+
+                    devices_mutex.unlock();
                }
     );
     handle.Get(INSPECTED_DATA_ENDPOINT,
                [&messages, &messages_mutex](const httplib::Request& input, httplib::Response& output) {
-                    std::cout<<"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"<<std::endl;
+                   std::cout << "GET " << INSPECTED_DATA_ENDPOINT << std::endl;
+
                    if (input.has_header("devices") && input.has_header("count")) {
-                       //std::string devices = input.get_header_value("devices");
+//                       std::vector<std::string> devices{};
+//                       std::string devicesString = input.get_header_value("devices");
+//                       boost::split(devices, devicesString, boost::is_any_of(","));
                        int count = std::stoi(input.get_header_value("count"));
 
                        std::stringstream ss;
@@ -91,11 +141,40 @@ int main(int argc, char* argv[]) {
                }
     );
     handle.Get(SELECT_DEVICES_ENDPOINT,
-               [](const httplib::Request& input, httplib::Response& output) {
+               [&devices, &devices_mutex](const httplib::Request& input, httplib::Response& output) {
+                   std::cout << "GET " << SELECT_DEVICES_ENDPOINT << std::endl;
+
+                   devices_mutex.lock();
+
+                   std::vector<std::string> devicesNames{};
+                   std::string devicesString = input.get_header_value("devices");
+                   boost::split(devicesNames, devicesString, boost::is_any_of(","));
+
+                   for(auto& device : devices) {
+                       if(std::find(devicesNames.begin(), devicesNames.end(), device.name) == devicesNames.end()) {
+                           std::cout << "TURN OFF: " << device.name << std::endl;
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF, "on"});
+                       } else {
+                           std::cout << "TURN ON: " << device.name << std::endl;
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON, "on"});
+                       }
+                   }
+
+                   devices_mutex.unlock();
                }
     );
     handle.Get(SELECT_ALL_ENDPOINT,
-               [](const httplib::Request& input, httplib::Response& output) {
+               [&devices, &devices_mutex](const httplib::Request& input, httplib::Response& output) {
+                   std::cout << "GET " << SELECT_ALL_ENDPOINT << std::endl;
+
+                   devices_mutex.lock();
+
+                   for(auto& device : devices) {
+                       std::cout << "TURN ON: " << device.name << std::endl;
+                       device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON, "on"});
+                   }
+
+                   devices_mutex.unlock();
                }
     );
     handle.set_pre_routing_handler([](const httplib::Request &input, httplib::Response &output) -> httplib::SSLServer::HandlerResponse{
