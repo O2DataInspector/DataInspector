@@ -153,10 +153,10 @@ int main(int argc, char* argv[]) {
                    for(auto& device : devices) {
                        if(std::find(devicesNames.begin(), devicesNames.end(), device.name) == devicesNames.end()) {
                            std::cout << "TURN OFF: " << device.name << std::endl;
-                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF, "on"});
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
                        } else {
                            std::cout << "TURN ON: " << device.name << std::endl;
-                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON, "on"});
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
                        }
                    }
 
