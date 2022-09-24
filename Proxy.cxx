@@ -25,32 +25,6 @@ struct Device {
 using messages_queue = std::queue<DIMessage>;
 using devices_list = std::vector<Device>;
 
-void handleDataInspector(DISocket& socket, messages_queue& messages, std::mutex& messages_mutex, devices_list& devices) {
-    while (true) {
-        auto msg = socket.receive();
-        std::cout << "MESSAGE RECEIVED" << std::endl;
-
-        messages_mutex.lock();
-        messages.push(std::move(msg));
-        messages_mutex.unlock();
-    }
-}
-
-void handleDevice(DISocket& socket) {
-    while (true) {
-        auto msg = socket.receive();
-        std::cout << "MESSAGE RECEIVED" << std::endl;
-
-        if(msg.header.type != DIMessage::Header::Type::DEVICE_OFF) {
-            std::cout << "WRONG MESSAGE TYPE";
-            return;
-        }
-
-        std::cout << msg.payload << " IS NOT ACTIVE" << std::endl;
-        return;
-    }
-}
-
 void receive(
         messages_queue& messages,
         std::mutex& messages_mutex,
@@ -68,16 +42,24 @@ void receive(
             return;
         }
 
-        if(initMsg.payload == "DataInspector") {
-            std::cout << "DATA_INSPECTOR IS ACTIVE" << std::endl;
-            handleDataInspector(socket, messages, messages_mutex, devices);
-        } else {
-            std::cout << initMsg.payload << " IS ACTIVE" << std::endl;
-            devices_mutex.lock();
-            devices.push_back(Device{initMsg.payload, socket});
-            devices_mutex.unlock();
 
-            handleDevice(socket);
+        std::cout << initMsg.payload << " IS ACTIVE" << std::endl;
+        devices_mutex.lock();
+        devices.push_back(Device{initMsg.payload, socket});
+        devices_mutex.unlock();
+
+        while (true) {
+          auto msg = socket.receive();
+
+          if(msg.header.type == DIMessage::Header::Type::DEVICE_OFF) {
+            std::cout << msg.payload << " IS NOT ACTIVE" << std::endl;
+            return;
+          } else if(msg.header.type == DIMessage::Header::Type::DATA) {
+            std::cout << "MESSAGE RECEIVED" << std::endl;
+            messages_mutex.lock();
+            messages.push(msg);
+            messages_mutex.unlock();
+          }
         }
     });
 }
@@ -153,10 +135,10 @@ int main(int argc, char* argv[]) {
                    for(auto& device : devices) {
                        if(std::find(devicesNames.begin(), devicesNames.end(), device.name) == devicesNames.end()) {
                            std::cout << "TURN OFF: " << device.name << std::endl;
-                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF, "on"});
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
                        } else {
                            std::cout << "TURN ON: " << device.name << std::endl;
-                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON, "on"});
+                           device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
                        }
                    }
 
@@ -171,7 +153,7 @@ int main(int argc, char* argv[]) {
 
                    for(auto& device : devices) {
                        std::cout << "TURN ON: " << device.name << std::endl;
-                       device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON, "on"});
+                       device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
                    }
 
                    devices_mutex.unlock();
