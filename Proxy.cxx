@@ -102,13 +102,13 @@ int main(int argc, char* argv[]) {
 
                        std::stringstream ss;
                        messages_mutex.lock();
-                       while(!messages.empty() && count > 0) {
+                       while(true) {
                            count--;
                            ss << messages.front().payload;
                            messages.pop();
 
-                           if(count > 0)
-                               ss << ",\n";
+                           if(messages.empty() || count < 0) break;
+                           else if(strlen(messages.front().payload)) ss << ",\n";
                        }
                        messages_mutex.unlock();
 
