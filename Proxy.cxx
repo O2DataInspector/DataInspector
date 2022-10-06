@@ -6,6 +6,7 @@
 #include "looped_task.hpp"
 #include "httplib.h"
 #include "DISocket.hpp"
+#include "DIMessages.h"
 
 #include "boost/algorithm/string.hpp"
 
@@ -18,7 +19,7 @@ constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
 
 struct Device {
-    std::string name;
+    DIMessages::RegisterDevice deviceSpec;
     DISocket& socket;
 };
 
@@ -42,10 +43,11 @@ void receive(
             return;
         }
 
+        auto registerDeviceMsg = initMsg.get<DIMessages::RegisterDevice>();
 
-        std::cout << initMsg.payload << " IS ACTIVE" << std::endl;
+        std::cout << registerDeviceMsg.name << "(analysisId=" << registerDeviceMsg.analysisId << ") IS ACTIVE" << std::endl;
         devices_mutex.lock();
-        devices.push_back(Device{initMsg.payload, socket});
+        devices.push_back(Device{registerDeviceMsg, socket});
         devices_mutex.unlock();
 
         while (true) {
@@ -82,7 +84,7 @@ int main(int argc, char* argv[]) {
 
                     std::vector<std::string> names{};
                     for(auto& device : devices)
-                        names.push_back(device.name);
+                        names.push_back(device.deviceSpec.name);
 
                     std::string joined_names = boost::algorithm::join(names, "\n");
                     output.set_content(joined_names, "text/plain");
@@ -133,11 +135,11 @@ int main(int argc, char* argv[]) {
                    boost::split(devicesNames, devicesString, boost::is_any_of(","));
 
                    for(auto& device : devices) {
-                       if(std::find(devicesNames.begin(), devicesNames.end(), device.name) == devicesNames.end()) {
-                           std::cout << "TURN OFF: " << device.name << std::endl;
+                       if(std::find(devicesNames.begin(), devicesNames.end(), device.deviceSpec.name) == devicesNames.end()) {
+                           std::cout << "TURN OFF: " << device.deviceSpec.name << std::endl;
                            device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
                        } else {
-                           std::cout << "TURN ON: " << device.name << std::endl;
+                           std::cout << "TURN ON: " << device.deviceSpec.name << std::endl;
                            device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
                        }
                    }
@@ -152,7 +154,7 @@ int main(int argc, char* argv[]) {
                    devices_mutex.lock();
 
                    for(auto& device : devices) {
-                       std::cout << "TURN ON: " << device.name << std::endl;
+                       std::cout << "TURN ON: " << device.deviceSpec.name << std::endl;
                        device.socket.send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
                    }
 
