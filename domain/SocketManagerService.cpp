@@ -1,6 +1,7 @@
 #include "domain/SocketManagerService.h"
 #include <iostream>
 #include "domain/DIMessages.h"
+#include "domain/Mappers.h"
 
 SocketManagerService::SocketManagerService(int port, MessageRepository& messageRepository, DevicesRepository& devicesRepository): acceptor(port), devicesRepository(devicesRepository), messageRepository(messageRepository) {
   acceptor.start([this](DISocket& socket) -> void{
@@ -16,9 +17,7 @@ SocketManagerService::SocketManagerService(int port, MessageRepository& messageR
     auto registerDeviceMsg = initMsg.get<DIMessages::RegisterDevice>();
     std::cout << registerDeviceMsg.name << " IS ACTIVE (analysisId=" << registerDeviceMsg.analysisId << ")" << std::endl;
 
-    Device device;
-    device.analysisId = registerDeviceMsg.analysisId;
-    device.name = registerDeviceMsg.name;
+    auto device = toDomain(registerDeviceMsg);
     this->devicesRepository.addDevice(device, &socket);
 
     while (true) {
