@@ -8,7 +8,7 @@ class MessageRepository {
 public:
   MessageRepository() {};
 
-  virtual void addMessage(const Message& message) = 0;
+  virtual void addMessage(const std::string& analysisId, const Message& message) = 0;
   virtual std::vector<Message> getOldestMessages(const std::string& analysisId, int count) = 0;
 };
 

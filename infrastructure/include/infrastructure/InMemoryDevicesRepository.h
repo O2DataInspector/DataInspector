@@ -4,6 +4,7 @@
 #include "domain/model/Device.h"
 #include "domain/DISocket.hpp"
 #include "domain/DevicesRepository.h"
+#include <unordered_map>
 
 struct DeviceWithSocket {
   Device device;
@@ -26,7 +27,7 @@ public:
 
 private:
   std::mutex devicesMutex;
-  std::vector<DeviceWithSocket> devices;
+  std::unordered_map<std::string, std::vector<DeviceWithSocket>> devices;
 };
 
 

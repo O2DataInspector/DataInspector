@@ -4,17 +4,18 @@
 #include "domain/MessageRepository.h"
 #include <mutex>
 #include <deque>
+#include <unordered_map>
 
 class InMemoryMessageRepository: public MessageRepository {
 public:
   InMemoryMessageRepository() {};
 
-  void addMessage(const Message& message);
-  std::vector<Message> getOldestMessages(const std::string& analysisId, int count);
+  void addMessage(const std::string& analysisId, const Message& message) override;
+  std::vector<Message> getOldestMessages(const std::string& analysisId, int count) override;
 
 private:
   std::mutex messageMutex;
-  std::deque<Message> messages;
+  std::unordered_map<std::string, std::deque<Message>> messages;
 };
 
 #endif //DIPROXY_INMEMORYMESSAGERPOSITORY_H

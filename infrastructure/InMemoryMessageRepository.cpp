@@ -1,11 +1,14 @@
 #include "infrastructure/InMemoryMessageRpository.h"
 #include <iostream>
 
-void InMemoryMessageRepository::addMessage(const Message& message) {
+void InMemoryMessageRepository::addMessage(const std::string& analysisId, const Message& message) {
   messageMutex.lock();
   std::cout << "MessageRepository::addMessage - " << message.raw << std::endl;
 
-  messages.emplace_back(message);
+  if(messages.count(analysisId) == 0)
+    messages[analysisId] = std::deque<Message>{};
+
+  messages[analysisId].emplace_back(message);
 
   messageMutex.unlock();
 }
@@ -15,16 +18,18 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
   messageMutex.lock();
   std::cout << "MessageRepository::getOldestMessages" << std::endl;
 
-  if(messages.empty()) {
+  auto& analysisMessages = messages[analysisId];
+
+  if(analysisMessages.empty()) {
     std::cout << "EMPTY" << std::endl;
     messageMutex.unlock();
     return response;
   }
 
-  uint64_t realCount = std::min((uint64_t) messages.size(), (uint64_t) count);
+  uint64_t realCount = std::min((uint64_t) analysisMessages.size(), (uint64_t) count);
   for(int i=0; i<realCount; i++) {
-    response.emplace_back(messages.front());
-    messages.pop_front();
+    response.emplace_back(analysisMessages.front());
+    analysisMessages.pop_front();
   }
 
   std::cout << "SIZE - " << response.size() << std::endl;

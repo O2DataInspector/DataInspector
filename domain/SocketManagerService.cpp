@@ -30,7 +30,7 @@ SocketManagerService::SocketManagerService(int port, MessageRepository& messageR
         return;
       } else if(msg.header.type == DIMessage::Header::Type::DATA) {
         std::cout << "MESSAGE RECEIVED" << std::endl;
-        this->messageRepository.addMessage(Message{msg.get<std::string>()});
+        this->messageRepository.addMessage(registerDeviceMsg.analysisId, Message{msg.get<std::string>()});
       }
     }
   });
