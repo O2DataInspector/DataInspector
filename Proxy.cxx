@@ -52,10 +52,10 @@ int main(int argc, char* argv[]) {
   httplib::Server handle;
 
   /// DATA
-  addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));
+  addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
 
   /// DEVICES
-  addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
+  addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));
   addEndpoint(handle, HTTPMethod::GET, STOP_INSPECTION_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, unselectAll));
   addEndpoint(handle, HTTPMethod::GET, SELECT_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectDevices));
   addEndpoint(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
