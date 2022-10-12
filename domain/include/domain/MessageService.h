@@ -8,7 +8,7 @@ class MessageService {
 public:
   MessageService(MessageRepository& messageRepository): messageRepository(messageRepository) {};
 
-  std::vector<Message> getOldestMessages(const std::string& analysisId, int count);
+  std::vector<Message> getOldestMessages(const std::string& runId, int count);
 
 private:
   MessageRepository& messageRepository;

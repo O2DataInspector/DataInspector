@@ -88,25 +88,25 @@ void DevicesEndpoint::selectDevices(const httplib::Request& input, httplib::Resp
   std::string devicesString = input.get_header_value("devices");
   boost::split(devicesNames, devicesString, boost::is_any_of(","));
 
-  std::string analysisId = input.get_header_value("analysis-id");
-  devicesService.intercept(analysisId, devicesNames);
+  std::string runId = input.get_header_value("run-id");
+  devicesService.intercept(runId, devicesNames);
 }
 
 void DevicesEndpoint::selectAll(const httplib::Request& input, httplib::Response& output) {
-  std::string analysisId = input.get_header_value("analysis-id");
-  devicesService.intercept(analysisId);
+  std::string runId = input.get_header_value("run-id");
+  devicesService.intercept(runId);
 }
 
 void DevicesEndpoint::unselectAll(const httplib::Request& input, httplib::Response& output) {
-  std::string analysisId = input.get_header_value("analysis-id");
-  devicesService.stopInterception(analysisId);
+  std::string runId = input.get_header_value("run-id");
+  devicesService.stopInterception(runId);
 }
 
 void DevicesEndpoint::getDevices(const httplib::Request& input, httplib::Response& output) {
-  std::string analysisId = input.get_header_value("analysis-id");
+  std::string runId = input.get_header_value("run-id");
 
   std::vector<std::string> devicesJSON{};
-  auto deviceList = devicesService.getDevices(analysisId);
+  auto deviceList = devicesService.getDevices(runId);
   std::transform(deviceList.begin(), deviceList.end(), std::back_inserter(devicesJSON), toResponse);
 
   std::string response = "{\"devices\":[" + boost::join(devicesJSON, ",") + "]}";

@@ -54,7 +54,7 @@ struct Specs
 };
 
 struct Device {
-  std::string analysisId;
+  std::string runId;
   std::string name;
   Specs specs;
 };

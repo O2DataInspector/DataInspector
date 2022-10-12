@@ -16,14 +16,14 @@ public:
   InMemoryDevicesRepository() {};
 
   void addDevice(const Device& device, DISocket* socket) override;
-  void removeDevice(const std::string& analysisId, const std::string& deviceName) override;
-  Device getDevice(const std::string& analysisId, const std::string& deviceName) override;
-  std::vector<Device> getDevices(const std::string& analysisId) override;
+  void removeDevice(const std::string& runId, const std::string& deviceName) override;
+  Device getDevice(const std::string& runId, const std::string& deviceName) override;
+  std::vector<Device> getDevices(const std::string& runId) override;
 
-  void intercept(const std::string& analysisId) override;
-  void intercept(const std::string& analysisId, const std::vector<std::string>& deviceNames) override;
-  void stopInterception(const std::string& analysisId, const std::vector<std::string>& deviceNames) override;
-  void stopInterception(const std::string& analysisId) override;
+  void intercept(const std::string& runId) override;
+  void intercept(const std::string& runId, const std::vector<std::string>& deviceNames) override;
+  void stopInterception(const std::string& runId, const std::vector<std::string>& deviceNames) override;
+  void stopInterception(const std::string& runId) override;
 
 private:
   std::mutex devicesMutex;
