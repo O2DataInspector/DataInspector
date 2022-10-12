@@ -6,36 +6,59 @@
 
 #include "api/DataEndpoint.h"
 #include "api/DevicesEndpoint.h"
+#include "api/AnalysisEndpoint.h"
 
 #include "domain/MessageService.h"
 #include "domain/DevicesService.h"
 #include "domain/SocketManagerService.h"
+#include "domain/AnalysisService.h"
+#include "domain/BuildManager.h"
+#include "domain/RunManager.h"
 
 #include "infrastructure/InMemoryMessageRpository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
+#include "infrastructure/InMemoryAnalysisRepository.h"
+#include "infrastructure/InMemoryRunRepository.h"
 
 #include "HTTPUtil.h"
 
 /* ENDPOINTS */
-constexpr char RAW_DATA_ENDPOINT[] = "/raw-data";
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
 constexpr char INSPECTED_DATA_ENDPOINT[]    = "/inspected-data";
 constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
+constexpr char IMPORT_ANALYSIS_ENDPOINT[]   = "/analysis/import";
+constexpr char ANALYSIS_STATUS_ENDPOINT[]   = "/analysis/status";
+constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analysis/workflows";
+constexpr char START_ANALYSIS_ENDPOINT[]    = "/analysis/start";
+constexpr char STOP_ANALYSIS_ENDPOINT[]    = "/analysis/stop";
 
 
 int main(int argc, char* argv[]) {
+  if(argc < 3) {
+    std::cout << "Usage: proxy <build-script> <execute-script>" << std::endl;
+    exit(1);
+  }
+
+  auto buildScriptPath = argv[1];
+  auto executeScriptPath = argv[2];
+
   /**
    * INIT OBJECTS
    */
   /// INFRASTRUCTURE
   InMemoryMessageRepository messageRepository;
   InMemoryDevicesRepository devicesRepository;
+  InMemoryAnalysisRepository analysisRepository;
+  InMemoryRunRepository runRepository;
 
   /// SERVICES
+  BuildManager buildManager{buildScriptPath, analysisRepository};
+  RunManager runManager{executeScriptPath, devicesRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
+  AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
   std::thread socketManagerThread([&devicesRepository, &messageRepository]() -> void{
     SocketManagerService socketManagerService{8081, messageRepository, devicesRepository};
   });
@@ -43,7 +66,7 @@ int main(int argc, char* argv[]) {
   /// API
   DataEndpoint dataEndpoint{messageService};
   DevicesEndpoint devicesEndpoint{devicesService};
-
+  AnalysisEndpoint analysisEndpoint{analysisService};
 
 
   /**
@@ -59,6 +82,13 @@ int main(int argc, char* argv[]) {
   addEndpoint(handle, HTTPMethod::GET, STOP_INSPECTION_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, unselectAll));
   addEndpoint(handle, HTTPMethod::GET, SELECT_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectDevices));
   addEndpoint(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
+
+  /// ANALYSIS
+  addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
+  addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
+  addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
+  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startAnalysis));
+  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopAnalysis));
 
 
 

@@ -64,6 +64,15 @@ std::vector<Device> InMemoryDevicesRepository::getDevices(const std::string& run
   return response;
 }
 
+void InMemoryDevicesRepository::terminate(const std::string& runId) {
+  devicesMutex.lock();
+  std::cout << "DeviceRepository::intercept" << std::endl;
+  for(auto& deviceWithSocket : devices[runId]) {
+    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::TERMINATE});
+  }
+  devicesMutex.unlock();
+}
+
 void InMemoryDevicesRepository::intercept(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::intercept" << std::endl;

@@ -1,16 +1,23 @@
 #include "infrastructure/InMemoryMessageRpository.h"
 #include <iostream>
 
-void InMemoryMessageRepository::addMessage(const std::string& runId, const Message& message) {
+std::string InMemoryMessageRepository::addMessage(const std::string& runId, const Message& message) {
   messageMutex.lock();
   std::cout << "MessageRepository::addMessage - " << message.raw << std::endl;
 
   if(messages.count(runId) == 0)
     messages[runId] = std::deque<Message>{};
 
+  auto id = message.id;
+  if(id.empty())
+    id = std::to_string(count++);
+
   messages[runId].emplace_back(message);
+  (--messages[runId].end())->id = id;
 
   messageMutex.unlock();
+
+  return id;
 }
 
 std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::string& runId, int count) {

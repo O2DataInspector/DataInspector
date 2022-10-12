@@ -13,6 +13,7 @@ public:
   virtual Device getDevice(const std::string& runId, const std::string& deviceName) = 0;
   virtual std::vector<Device> getDevices(const std::string& runId) = 0;
 
+  virtual void terminate(const std::string& runId) = 0;
   virtual void intercept(const std::string& runId) = 0;
   virtual void intercept(const std::string& runId, const std::vector<std::string>& deviceNames) = 0;
   virtual void stopInterception(const std::string& runId, const std::vector<std::string>& deviceNames) = 0;

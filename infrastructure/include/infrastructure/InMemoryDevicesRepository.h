@@ -20,6 +20,7 @@ public:
   Device getDevice(const std::string& runId, const std::string& deviceName) override;
   std::vector<Device> getDevices(const std::string& runId) override;
 
+  void terminate(const std::string& runId) override;
   void intercept(const std::string& runId) override;
   void intercept(const std::string& runId, const std::vector<std::string>& deviceNames) override;
   void stopInterception(const std::string& runId, const std::vector<std::string>& deviceNames) override;
