@@ -59,7 +59,7 @@ std::vector<Forward> toDomain(const std::vector<DIMessages::RegisterDevice::Spec
 
 Device toDomain(const DIMessages::RegisterDevice& registerDevice) {
   return Device{
-          .analysisId = registerDevice.analysisId,
+          .runId = registerDevice.runId,
           .name = registerDevice.name,
           .specs = Specs{
             .inputs = toDomain(registerDevice.specs.inputs),

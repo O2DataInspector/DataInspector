@@ -10,12 +10,13 @@ class InMemoryMessageRepository: public MessageRepository {
 public:
   InMemoryMessageRepository() {};
 
-  void addMessage(const std::string& analysisId, const Message& message) override;
-  std::vector<Message> getOldestMessages(const std::string& analysisId, int count) override;
+  std::string addMessage(const std::string& runId, const Message& message) override;
+  std::vector<Message> getOldestMessages(const std::string& runId, int count) override;
 
 private:
   std::mutex messageMutex;
   std::unordered_map<std::string, std::deque<Message>> messages;
+  int count = 0;
 };
 
 #endif //DIPROXY_INMEMORYMESSAGERPOSITORY_H

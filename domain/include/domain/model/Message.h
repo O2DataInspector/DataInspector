@@ -4,6 +4,7 @@
 #include <string>
 
 struct Message {
+  std::string id;
   std::string raw;
 };
 

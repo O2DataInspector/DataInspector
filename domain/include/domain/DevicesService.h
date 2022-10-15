@@ -8,13 +8,13 @@ class DevicesService {
 public:
   DevicesService(DevicesRepository& devicesRepository): devicesRepository(devicesRepository) {};
 
-  Device getDevice(const std::string& analysisId, const std::string& deviceName);
-  std::vector<Device> getDevices(const std::string& analysisId);
+  Device getDevice(const std::string& runId, const std::string& deviceName);
+  std::vector<Device> getDevices(const std::string& runId);
 
-  void intercept(const std::string& analysisId);
-  void intercept(const std::string& analysisId, const std::vector<std::string>& deviceNames);
-  void stopInterception(const std::string& analysisId, const std::vector<std::string>& deviceNames);
-  void stopInterception(const std::string& analysisId);
+  void intercept(const std::string& runId);
+  void intercept(const std::string& runId, const std::vector<std::string>& deviceNames);
+  void stopInterception(const std::string& runId, const std::vector<std::string>& deviceNames);
+  void stopInterception(const std::string& runId);
 
 private:
   DevicesRepository& devicesRepository;

@@ -15,7 +15,7 @@ SocketManagerService::SocketManagerService(int port, MessageRepository& messageR
     }
 
     auto registerDeviceMsg = initMsg.get<DIMessages::RegisterDevice>();
-    std::cout << registerDeviceMsg.name << " IS ACTIVE (analysisId=" << registerDeviceMsg.analysisId << ")" << std::endl;
+    std::cout << registerDeviceMsg.name << " IS ACTIVE (analysisId=" << registerDeviceMsg.runId << ")" << std::endl;
 
     auto device = toDomain(registerDeviceMsg);
     this->devicesRepository.addDevice(device, &socket);
@@ -25,11 +25,11 @@ SocketManagerService::SocketManagerService(int port, MessageRepository& messageR
 
       if(msg.header.type == DIMessage::Header::Type::DEVICE_OFF) {
         std::cout << msg.payload << " IS NOT ACTIVE" << std::endl;
-        this->devicesRepository.removeDevice(registerDeviceMsg.analysisId, registerDeviceMsg.name);
+        this->devicesRepository.removeDevice(registerDeviceMsg.runId, registerDeviceMsg.name);
         return;
       } else if(msg.header.type == DIMessage::Header::Type::DATA) {
         std::cout << "MESSAGE RECEIVED" << std::endl;
-        this->messageRepository.addMessage(registerDeviceMsg.analysisId, Message{msg.get<std::string>()});
+        this->messageRepository.addMessage(registerDeviceMsg.runId, Message{"", msg.get<std::string>()});
       }
     }
   });
