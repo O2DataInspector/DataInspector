@@ -1,10 +1,12 @@
-#ifndef DIPROXY_INMEMORYMESSAGERPOSITORY_H
-#define DIPROXY_INMEMORYMESSAGERPOSITORY_H
+#ifndef DIPROXY_INMEMORYMESSAGEREPOSITORY_H
+#define DIPROXY_INMEMORYMESSAGEREPOSITORY_H
 
 #include "domain/MessageRepository.h"
 #include <mutex>
 #include <deque>
 #include <unordered_map>
+
+#include <mongoc/mongoc.h>
 
 class InMemoryMessageRepository: public MessageRepository {
 public:
@@ -19,6 +21,7 @@ private:
   std::mutex messageMutex;
   std::unordered_map<std::string, std::deque<Message>> messages;
   int count = 0;
+  mongoc_client_t *client;
 };
 
-#endif //DIPROXY_INMEMORYMESSAGERPOSITORY_H
+#endif //DIPROXY_INMEMORYMESSAGEREPOSITORY_H

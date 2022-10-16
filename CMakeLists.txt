@@ -12,7 +12,8 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/api ${CMAKE_CURRENT_SOURCE_DIR}/dom
 
 # Dependencies
 FIND_PACKAGE(Threads REQUIRED)
+find_package(mongoc-1.0 1.7 REQUIRED)
 
 ADD_EXECUTABLE(proxy Proxy.cxx)
 
-TARGET_LINK_LIBRARIES(proxy Threads::Threads api domain infrastructure utils)
+TARGET_LINK_LIBRARIES(proxy Threads::Threads api domain infrastructure utils mongo::mongoc_shared)

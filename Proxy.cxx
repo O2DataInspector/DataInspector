@@ -15,7 +15,7 @@
 #include "domain/BuildManager.h"
 #include "domain/RunManager.h"
 
-#include "infrastructure/InMemoryMessageRpository.h"
+#include "infrastructure/InMemoryMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
 #include "infrastructure/InMemoryAnalysisRepository.h"
 #include "infrastructure/InMemoryRunRepository.h"
@@ -37,6 +37,9 @@ constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
+mongoc_client_t *client;
+int prx_dbg = 0;
+/* fixme: setting value through command line: --prxdbg */
 
 int main(int argc, char* argv[]) {
   if(argc < 3) {
