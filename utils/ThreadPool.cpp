@@ -14,6 +14,10 @@ void ThreadPool::addJob(const Job &job) {
   queueCondition.notify_one();
 }
 
+int ThreadPool::size() {
+  return threads.size();
+}
+
 void ThreadPool::loop() {
   while (running) {
     Job job;

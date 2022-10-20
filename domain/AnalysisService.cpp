@@ -26,7 +26,7 @@ std::vector<std::string> findWorkflows(const std::string& buildPath) {
 }
 
 std::vector<std::string> AnalysisService::listWorkflows(const std::string& analysisId) {
-  return findWorkflows("/" + analysisId + "/BUILD/workflows");
+  return findWorkflows(analysisId + "/BUILD/workflows");
 }
 
 std::string AnalysisService::startAnalysis(const std::string& analysisId, const std::string& workflow, const std::string& config) {

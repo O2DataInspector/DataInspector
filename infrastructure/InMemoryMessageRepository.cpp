@@ -3,7 +3,7 @@
 
 std::string InMemoryMessageRepository::addMessage(const std::string& runId, const Message& message) {
   messageMutex.lock();
-  std::cout << "MessageRepository::addMessage - " << message.raw << std::endl;
+  std::cout << "MessageRepository::addMessage" << std::endl;
 
   if(messages.count(runId) == 0)
     messages[runId] = std::deque<Message>{};

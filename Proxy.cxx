@@ -59,9 +59,8 @@ int main(int argc, char* argv[]) {
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
   AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
-  std::thread socketManagerThread([&devicesRepository, &messageRepository]() -> void{
-    SocketManagerService socketManagerService{8081, messageRepository, devicesRepository};
-  });
+  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
+  socketManagerService.start();
 
   /// API
   DataEndpoint dataEndpoint{messageService};
@@ -118,6 +117,4 @@ int main(int argc, char* argv[]) {
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
-
-  socketManagerThread.join();
 }

@@ -1,11 +1,7 @@
 #include "domain/RunManager.h"
 #include <iostream>
 
-RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository): scriptPath(scriptPath), devicesRepository(devicesRepository), threadPool(2), ioContext(), work(ioContext) {
-  threadPool.addJob([this]() {
-    ioContext.run();
-  });
-
+RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository): scriptPath(scriptPath), devicesRepository(devicesRepository), threadPool(1), ioContext(), work(ioContext) {
   threadPool.addJob([this]() {
     ioContext.run();
   });
