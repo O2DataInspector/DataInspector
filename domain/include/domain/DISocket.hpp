@@ -14,6 +14,8 @@
 #include <array>
 #include <iostream>
 
+#define ASIO_CATCH(customMessage) catch(boost::system::system_error& err){ auto msg = std::string{err.what()}; auto code = std::to_string(err.code().value()); throw std::runtime_error{"Exception in DataInspector (boost_code=" + code + ", boost_msg=" + msg + ") - " + customMessage}; }
+
 template <typename... T>
 struct always_static_assert : std::false_type {
 };
@@ -109,7 +111,7 @@ struct DIMessage {
   };
 
   template<typename T>
-  DIMessage(Header::Type type, T&& payload)
+  DIMessage(Header::Type type, const T& payload)
   {
     uint64_t payloadSize = 0;
     if constexpr (std::is_base_of_v<std::string, T>) {
@@ -198,67 +200,76 @@ public:
   DISocket(boost::asio::ip::tcp::socket&& socket) : socket(std::move(socket)) {}
 
   void send(const DIMessage& message) {
-    socket.send(std::array<boost::asio::const_buffer, 2>{
-      boost::asio::buffer(&message.header, sizeof(DIMessage::Header)),
-      boost::asio::buffer(message.payload, message.header.payloadSize())
-    });
+    try {
+      socket.send(std::array<boost::asio::const_buffer, 2>{
+              boost::asio::buffer(&message.header, sizeof(DIMessage::Header)),
+              boost::asio::buffer(message.payload, message.header.payloadSize())
+      });
+    } ASIO_CATCH("DISocket::send")
   }
   void asyncSend(DIMessage&& message, const std::function<void(std::size_t)>& sendCallback = nullptr, const std::function<void(std::size_t)>& errorHandler = nullptr) {
-    auto* messagePtr = new DIMessage(std::move(message));
+    try {
+      auto* messagePtr = new DIMessage(std::move(message));
 
-    socket.async_send(std::array<boost::asio::const_buffer, 2>{
-      boost::asio::buffer(&messagePtr->header, sizeof(DIMessage::Header)),
-      boost::asio::buffer(messagePtr->payload, messagePtr->header.payloadSize())
-    }, [messagePtr, sendCallback, errorHandler](boost::system::error_code ec, std::size_t size) {
-      if(ec.failed()) {
-        if(errorHandler)
-          errorHandler(size);
-      } else {
-        if(sendCallback)
-          sendCallback(size);
-      }
-      delete messagePtr;
-    });
-  }
-
-  DIMessage receive() {
-    DIMessage message;
-    socket.receive(boost::asio::buffer(&message.header, sizeof(DIMessage::Header)));
-
-    if (message.header.payloadSize() > 0) {
-      message.payload = new char[message.header.payloadSize()];
-      socket.receive(boost::asio::buffer(message.payload, message.header.payloadSize()));
-    }
-
-    return message;
-  }
-  void asyncReceive(const std::function<void(DIMessage)>& receiveCallback, const std::function<void(std::size_t)>& errorHandler = nullptr) {
-    auto* messagePtr = new DIMessage{};
-    auto receiveBody = [messagePtr, this, errorHandler, receiveCallback]() {
-      messagePtr->payload = new char[messagePtr->header.payloadSize()];
-      boost::asio::async_read(socket, boost::asio::buffer(messagePtr->payload, messagePtr->header.payloadSize()), [messagePtr, errorHandler, receiveCallback](boost::system::error_code ec, std::size_t size) {
+      socket.async_send(std::array<boost::asio::const_buffer, 2>{
+              boost::asio::buffer(&messagePtr->header, sizeof(DIMessage::Header)),
+              boost::asio::buffer(messagePtr->payload, messagePtr->header.payloadSize())
+      }, [messagePtr, sendCallback, errorHandler](boost::system::error_code ec, std::size_t size) {
         if(ec.failed()) {
           if(errorHandler)
             errorHandler(size);
         } else {
-          receiveCallback(std::move(*messagePtr));
+          if(sendCallback)
+            sendCallback(size);
         }
         delete messagePtr;
       });
-    };
+    } ASIO_CATCH("DISocket::asyncSend")
+  }
 
-    boost::asio::async_read(socket, boost::asio::buffer(&messagePtr->header, sizeof(DIMessage::Header)), [messagePtr, errorHandler, receiveBody, receiveCallback](boost::system::error_code ec, std::size_t size) {
-      if(ec.failed()) {
-        if(errorHandler)
-          errorHandler(size);
-        delete messagePtr;
-      } else if(messagePtr->header.payloadSize() > 0) {
-        receiveBody();
-      } else {
-        receiveCallback(std::move(*messagePtr));
-        delete messagePtr;
+  DIMessage receive() {
+    try {
+      DIMessage message;
+      socket.receive(boost::asio::buffer(&message.header, sizeof(DIMessage::Header)));
+
+      if (message.header.payloadSize() > 0) {
+        message.payload = new char[message.header.payloadSize()];
+        socket.receive(boost::asio::buffer(message.payload, message.header.payloadSize()));
       }
-    });
+
+      return message;
+    } ASIO_CATCH("DISocket::receive")
+  }
+
+  void asyncReceive(const std::function<void(DIMessage)>& receiveCallback, const std::function<void(std::size_t)>& errorHandler = nullptr) {
+    try {
+      auto* messagePtr = new DIMessage{};
+      auto receiveBody = [messagePtr, this, errorHandler, receiveCallback]() {
+        messagePtr->payload = new char[messagePtr->header.payloadSize()];
+        boost::asio::async_read(socket, boost::asio::buffer(messagePtr->payload, messagePtr->header.payloadSize()), [messagePtr, errorHandler, receiveCallback](boost::system::error_code ec, std::size_t size) {
+          if(ec.failed()) {
+            if(errorHandler)
+              errorHandler(size);
+          } else {
+            receiveCallback(std::move(*messagePtr));
+          }
+          delete messagePtr;
+        });
+      };
+
+      boost::asio::async_read(socket, boost::asio::buffer(&messagePtr->header, sizeof(DIMessage::Header)), [messagePtr, errorHandler, receiveBody, receiveCallback](boost::system::error_code ec, std::size_t size) {
+        if(ec.failed()) {
+          if(errorHandler)
+            errorHandler(size);
+          delete messagePtr;
+        } else if(messagePtr->header.payloadSize() > 0) {
+          receiveBody();
+        } else {
+          receiveCallback(std::move(*messagePtr));
+          delete messagePtr;
+        }
+      });
+    } ASIO_CATCH("DISocket::asyncReceive")
   }
 
 private:
