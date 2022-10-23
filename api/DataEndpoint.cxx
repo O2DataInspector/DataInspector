@@ -27,9 +27,10 @@ std::string toJson(const Message& message) {
   doc.AddMember("splitPayloadParts", Value(message.splitPayloadParts), alloc);
   doc.AddMember("payloadSerialization", Value(message.payloadSerialization.c_str(), alloc), alloc);
   doc.AddMember("payloadSplitIndex", Value(message.payloadSplitIndex), alloc);
+  doc.AddMember("payload", Value(message.payload.c_str(), alloc), alloc);
 
-  if(message.payload.has_value())
-    doc.AddMember("payload", Value(message.payload.value().c_str(), alloc), alloc);
+  if(message.payloadEndianness.has_value())
+    doc.AddMember("payloadEndianness", Value(message.payloadEndianness.value().c_str(), alloc), alloc);
 
   if(message.taskHash.has_value())
     doc.AddMember("taskHash", Value(message.taskHash.value()), alloc);

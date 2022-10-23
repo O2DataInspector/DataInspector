@@ -24,7 +24,8 @@ struct Message {
   uint32_t splitPayloadParts;
   std::string payloadSerialization;
   uint32_t payloadSplitIndex;
-  std::optional<std::string> payload;
+  std::string payload;
+  std::optional<std::string> payloadEndianness;
 
   /// OutputObjHeader
   std::optional<uint32_t> taskHash;
