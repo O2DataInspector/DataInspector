@@ -41,15 +41,15 @@ std::string toJson(const Message& message) {
 }
 
 void DataEndpoint::getMessage(const httplib::Request& input, httplib::Response& output) {
-  auto msgId = input.get_param_value("id");
+  auto msgId = input.get_header_value("id");
 
   auto message = messageService.getMessage(msgId);
   output.set_content(toJson(message), "application/json");
 }
 
 void DataEndpoint::getMessages(const httplib::Request &input, httplib::Response &output) {
-  auto count = std::stoi(input.get_param_value("count"));
-  auto runId = input.get_param_value("runId");
+  auto count = std::stoi(input.get_header_value("count"));
+  auto runId = input.get_header_value("runId");
 
   std::vector<std::string> messagesJson{};
   auto messages = messageService.getOldestMessages(runId, count);
@@ -63,14 +63,14 @@ void DataEndpoint::getMessages(const httplib::Request &input, httplib::Response 
 
 void DataEndpoint::newerMessages(const httplib::Request& input, httplib::Response& output) {
   std::vector<std::string> devicesNames{};
-  std::string devicesString = input.get_param_value("devices");
+  std::string devicesString = input.get_header_value("devices");
   boost::split(devicesNames, devicesString, boost::is_any_of(","));
-  auto time = boost::lexical_cast<uint64_t>(input.get_param_value("time"));
-  auto runId = input.get_param_value("runId");
+  auto time = boost::lexical_cast<uint64_t>(input.get_header_value("time"));
+  auto runId = input.get_header_value("runId");
 
   int count = std::numeric_limits<int>::max();
-  if(input.has_param("count"))
-    count = std::stoi(input.get_param_value("count"));
+  if(input.has_header("count"))
+    count = std::stoi(input.get_header_value("count"));
 
   std::vector<std::string> idsJson{};
   auto ids = messageService.newerMessages(runId, time, devicesNames, count);

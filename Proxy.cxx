@@ -91,8 +91,8 @@ int main(int argc, char* argv[]) {
   addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
   addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
   addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
-  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startAnalysis));
-  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopAnalysis));
+  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startRun));
+  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopRun));
 
 
 

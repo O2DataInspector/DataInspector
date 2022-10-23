@@ -29,7 +29,7 @@ std::vector<std::string> AnalysisService::listWorkflows(const std::string& analy
   return findWorkflows(analysisId + "/BUILD/workflows");
 }
 
-std::string AnalysisService::startAnalysis(const std::string& analysisId, const std::string& workflow, const std::string& config) {
+std::string AnalysisService::startRun(const std::string& analysisId, const std::string& workflow, const std::string& config) {
   auto runId = runRepository.save(Run{"", analysisId, workflow, config});
   auto analysis = analysisRepository.get(analysisId);
   auto run = runRepository.get(runId);
@@ -38,6 +38,6 @@ std::string AnalysisService::startAnalysis(const std::string& analysisId, const 
   return runId;
 }
 
-void AnalysisService::sopAnalysis(const std::string& runId) {
+void AnalysisService::stopRun(const std::string& runId) {
   runManager.stop(runId);
 }
