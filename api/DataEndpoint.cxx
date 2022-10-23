@@ -11,6 +11,7 @@ std::string toJson(const Message& message) {
   doc.SetObject();
   auto& alloc = doc.GetAllocator();
 
+  doc.AddMember("id", Value(message.id.c_str(), alloc), alloc);
   doc.AddMember("sender", Value(message.sender.c_str(), alloc), alloc);
   doc.AddMember("startTime", Value(message.startTime), alloc);
   doc.AddMember("duration", Value(message.duration), alloc);
