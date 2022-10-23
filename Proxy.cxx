@@ -32,9 +32,10 @@ constexpr char IMPORT_ANALYSIS_ENDPOINT[]   = "/analysis/import";
 constexpr char ANALYSIS_STATUS_ENDPOINT[]   = "/analysis/status";
 constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analysis/workflows";
 constexpr char START_ANALYSIS_ENDPOINT[]    = "/analysis/start";
-constexpr char STOP_ANALYSIS_ENDPOINT[]    = "/analysis/stop";
+constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
 
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
+constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
 
 int main(int argc, char* argv[]) {
@@ -78,6 +79,7 @@ int main(int argc, char* argv[]) {
   /// DATA
   addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
   addEndpoint(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
+  addEndpoint(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
 
   /// DEVICES
   addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));

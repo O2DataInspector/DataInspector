@@ -40,6 +40,13 @@ std::string toJson(const Message& message) {
   return std::string{buffer.GetString(), buffer.GetSize()};
 }
 
+void DataEndpoint::getMessage(const httplib::Request& input, httplib::Response& output) {
+  auto msgId = input.get_param_value("id");
+
+  auto message = messageService.getMessage(msgId);
+  output.set_content(toJson(message), "application/json");
+}
+
 void DataEndpoint::getMessages(const httplib::Request &input, httplib::Response &output) {
   auto count = std::stoi(input.get_param_value("count"));
   auto runId = input.get_param_value("runId");

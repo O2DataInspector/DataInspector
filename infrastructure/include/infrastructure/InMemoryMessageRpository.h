@@ -11,6 +11,7 @@ public:
   InMemoryMessageRepository() {};
 
   std::string addMessage(const std::string& runId, const Message& message) override;
+  Message getMessage(const std::string& id) override;
   std::vector<Message> getOldestMessages(const std::string& runId, int count) override;
   std::vector<std::string> newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices) override;
 

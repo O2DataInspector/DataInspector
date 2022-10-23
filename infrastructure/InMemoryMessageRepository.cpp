@@ -21,6 +21,24 @@ std::string InMemoryMessageRepository::addMessage(const std::string& runId, cons
   return id;
 }
 
+Message InMemoryMessageRepository::getMessage(const std::string& id) {
+  messageMutex.lock();
+  std::cout << "MessageRepository::getMessage" << std::endl;
+
+  for(auto& run : messages) {
+    for(auto& message : run.second) {
+      if(message.id == id) {
+        auto response = message;
+        messageMutex.unlock();
+        return response;
+      }
+    }
+  }
+
+  messageMutex.unlock();
+  throw std::runtime_error("Id not found");
+}
+
 std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::string& runId, int count) {
   std::vector<Message> response{};
   messageMutex.lock();
