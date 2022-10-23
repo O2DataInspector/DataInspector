@@ -65,7 +65,7 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
   return response;
 }
 
-std::vector<std::string> InMemoryMessageRepository::newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices) {
+std::vector<std::string> InMemoryMessageRepository::newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices, int count) {
   std::vector<std::string> response{};
   messageMutex.lock();
   std::cout << "MessageRepository::newerMessages" << std::endl;
@@ -78,9 +78,15 @@ std::vector<std::string> InMemoryMessageRepository::newerMessages(const std::str
     return response;
   }
 
+  uint64_t realCount = std::min((uint64_t) analysisMessages.size(), (uint64_t) count);
   for(auto& msg : analysisMessages) {
-    if(msg.creationTimer > time && std::find(devices.begin(), devices.end(), msg.sender) != devices.end())
+    if(msg.creationTimer > time && std::find(devices.begin(), devices.end(), msg.sender) != devices.end()) {
       response.push_back(msg.id);
+      realCount--;
+
+      if(realCount == 0)
+        break;
+    }
   }
 
   messageMutex.unlock();

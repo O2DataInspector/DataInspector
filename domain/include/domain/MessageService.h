@@ -10,7 +10,7 @@ public:
 
   Message getMessage(const std::string& id);
   std::vector<Message> getOldestMessages(const std::string& runId, int count);
-  std::vector<std::string> newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices);
+  std::vector<std::string> newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices, int count);
 
 private:
   MessageRepository& messageRepository;

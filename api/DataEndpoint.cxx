@@ -68,8 +68,12 @@ void DataEndpoint::newerMessages(const httplib::Request& input, httplib::Respons
   auto time = boost::lexical_cast<uint64_t>(input.get_param_value("time"));
   auto runId = input.get_param_value("runId");
 
+  int count = std::numeric_limits<int>::max();
+  if(input.has_param("count"))
+    count = std::stoi(input.get_param_value("count"));
+
   std::vector<std::string> idsJson{};
-  auto ids = messageService.newerMessages(runId, time, devicesNames);
+  auto ids = messageService.newerMessages(runId, time, devicesNames, count);
   std::transform(ids.begin(), ids.end(), std::back_inserter(idsJson), [](const std::string& id) {
     return "\"" + id + "\"";
   });
