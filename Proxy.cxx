@@ -34,6 +34,8 @@ constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analysis/workflows";
 constexpr char START_ANALYSIS_ENDPOINT[]    = "/analysis/start";
 constexpr char STOP_ANALYSIS_ENDPOINT[]    = "/analysis/stop";
 
+constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
+
 
 int main(int argc, char* argv[]) {
   if(argc < 3) {
@@ -75,6 +77,7 @@ int main(int argc, char* argv[]) {
 
   /// DATA
   addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
+  addEndpoint(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
 
   /// DEVICES
   addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));

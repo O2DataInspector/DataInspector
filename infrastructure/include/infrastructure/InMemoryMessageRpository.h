@@ -12,6 +12,7 @@ public:
 
   std::string addMessage(const std::string& runId, const Message& message) override;
   std::vector<Message> getOldestMessages(const std::string& runId, int count) override;
+  std::vector<std::string> newerMessages(const std::string& runId, uint64_t time, const std::vector<std::string>& devices) override;
 
 private:
   std::mutex messageMutex;

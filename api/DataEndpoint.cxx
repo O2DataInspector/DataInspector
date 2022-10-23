@@ -1,5 +1,6 @@
 #include "api/DataEndpoint.h"
 #include "boost/algorithm/string.hpp"
+#include "boost/lexical_cast.hpp"
 
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
@@ -50,5 +51,22 @@ void DataEndpoint::getMessages(const httplib::Request &input, httplib::Response 
   });
 
   std::string response = "{\"messages\":[" + boost::join(messagesJson, ",") + "]}";
+  output.set_content(response, "application/json");
+}
+
+void DataEndpoint::newerMessages(const httplib::Request& input, httplib::Response& output) {
+  std::vector<std::string> devicesNames{};
+  std::string devicesString = input.get_param_value("devices");
+  boost::split(devicesNames, devicesString, boost::is_any_of(","));
+  auto time = boost::lexical_cast<uint64_t>(input.get_param_value("time"));
+  auto runId = input.get_param_value("runId");
+
+  std::vector<std::string> idsJson{};
+  auto ids = messageService.newerMessages(runId, time, devicesNames);
+  std::transform(ids.begin(), ids.end(), std::back_inserter(idsJson), [](const std::string& id) {
+    return "\"" + id + "\"";
+  });
+
+  std::string response = "{\"messages\":[" + boost::join(idsJson, ",") + "]}";
   output.set_content(response, "application/json");
 }

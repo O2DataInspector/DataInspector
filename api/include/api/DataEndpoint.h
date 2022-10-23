@@ -10,6 +10,7 @@ public:
   DataEndpoint(MessageService& messageService): messageService(messageService) {}
 
   void getMessages(const httplib::Request& input, httplib::Response& output);
+  void newerMessages(const httplib::Request& input, httplib::Response& output);
 
 private:
   MessageService& messageService;
