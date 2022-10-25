@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
   /**
    * RUN
    */
-  auto address = "127.0.0.1";
+  auto address = "0.0.0.0";
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
