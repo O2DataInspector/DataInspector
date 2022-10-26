@@ -240,10 +240,12 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 #ifdef MONGODB_SWITCH
   bson_error_t error;
   bson_t *pipeline;
+  bson_t *query;
+  bson_t *update;
   const bson_t *doc;
   const bson_value_t *value;
   bson_oid_t oid;
-  /*bson_iter_t iter;*/
+  bson_iter_t iter;
   mongoc_client_t *client;
   mongoc_cursor_t *cursor;
   mongoc_collection_t *collection;
@@ -261,29 +263,9 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 
   collection = mongoc_client_get_collection(client, "prx-db", "test");
 
+  char *str;
   /* fixme: add constraints to rule out two unread messages with same startTime */
-  char json[] = "["
-			"{"
-				"\"$match\":"
-					"{"
-						"\"read\": false"
-					"}"
-			"},"
-			"{"
-				"\"$sort\":"
-					"{"
-						"\"startTime\": 1"
-					"}"
-			"},"
-			"{"
-				"\"$limit\": 1"
-			"}"
-		"]";
-       // "[{\"$match\":{\"read\":false}},{\"$sort\":{\"startTime\":1}},{\"$limit\":1}]";
-  pipeline = 
-	bson_new_from_json((const unsigned char *) json, -1, &error);
-
-  /*
+/*
  * below is better solution - instead of invoking (erronous as we 
  * already saw) bson_new_from_json, make the objects explicitly. It should
  * also be faster - you have more control over which calls are invoked instead
@@ -293,6 +275,8 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
  * the best solution is to only use the functions, without any macros. It should
  * have the minimal invokation as possible.
  *
+ */
+ /*
   bson_t *match_cmd = BCON_NEW(
 				"$match",
 				   "{",
@@ -300,8 +284,6 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 					BCON_BOOL(false),
 				   "}"
 			      );
-
-  std::cout << bson_as_canonical_extended_json(match_cmd, NULL) << std::endl;
 
   bson_t *sort_cmd = BCON_NEW(
 				"$sort",
@@ -311,20 +293,23 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 				   "}"
 			     );
 
-  std::cout << bson_as_canonical_extended_json(sort_cmd, NULL) << std::endl;
-
   bson_t *limit_cmd = BCON_NEW("$limit",
 				BCON_INT32(count));
 
   * fixme: you have to glue this docs together into one array
-  * 
-  std::cout << bson_as_canonical_extended_json(limit_cmd, NULL) << std::endl;
-  */
+  * fixme2: in BSON there is no array. Probably you have to convert it into
+  * one doc, and order of array is determined by keys in doc "0", "1", ...
+  */ 
 
-  /*
+/*
  * ponizszy BSON sie nie tworzy - najwidoczniej nie ma mozliwosci stworzenia
  * dokumentu zaczynajacym sie od "{" lub "[". Calkiem prawdopodobne, ze bug.
+ * edit: "{" lub "[" nie jest dozwolone w BSON'ie, tylko w JSON'ie. API nie
+ * pozwala na appendowanie docow oraz tablic bez klucza, czyli takie tablice
+ * 'anonimowe' musisz tlumaczyc na doca z kluczami "0", "1", "2", ... itd.
+  */
   pipeline = BCON_NEW(
+			"0",
 				"{",
 					"$match",
 						"{",
@@ -332,6 +317,7 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 							BCON_BOOL(false),
 						"}",
 				"}",
+			"1",
 				"{",
 					"$sort",
 						"{",
@@ -339,12 +325,12 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 							BCON_INT32(1),
 						"}",
 				"}",
+			"2",
 				"{",
 					"$limit",
 					BCON_INT32(count),
 				"}"
 	     	     );
-  */
 
   printf("json as canonical BSON:\n%s\n", 
 		bson_as_canonical_extended_json(pipeline, NULL));
@@ -355,19 +341,17 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
   while(mongoc_cursor_next(cursor, &doc))
   {
 	/* char *str = bson_as_canonical_extended_json(doc, NULL); */
-	char *str = bson_as_relaxed_extended_json(doc, NULL);
+	str = bson_as_relaxed_extended_json(doc, NULL);
 	printf("returned json from db:\n%s\n", str);
 	messages[msg_id].raw = str;
 	response.emplace_back(messages[msg_id]);
 	msg_id++;
-	bson_iter_t iter;
 	if(bson_iter_init(&iter, doc)
 	&& bson_iter_find(&iter, "_id") 
 	&& BSON_ITER_HOLDS_OID(&iter))
 	{
 		if(prx_dbg)
 			printf("found key: %s\n", bson_iter_key(&iter));
-		/*const bson_value_t * */
 		value = bson_iter_value(&iter);
 		bson_oid_copy(&(value->value.v_oid), &oid);
 		if(prx_dbg)
@@ -383,14 +367,14 @@ std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::str
 			  << std::endl;
 	}
 
-	bson_t *query = BCON_NEW("_id", BCON_OID(&oid));
+	query = BCON_NEW("_id", BCON_OID(&oid));
 
-	bson_t *update = BCON_NEW("$set",
-					"{",
-						"read",
-						BCON_BOOL(true),
-					"}"
-				 );
+	update = BCON_NEW("$set", 
+				"{",
+					"read",
+					BCON_BOOL(true),
+				"}"
+			);
 
 	if(!mongoc_collection_update_one(
 			collection, query, update, NULL, NULL, &error))

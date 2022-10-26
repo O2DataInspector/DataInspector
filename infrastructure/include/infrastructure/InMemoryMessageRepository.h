@@ -21,7 +21,7 @@ private:
   std::mutex messageMutex;
   std::unordered_map<std::string, std::deque<Message>> messages;
   int count = 0;
-  mongoc_client_t *client;
+  //mongoc_client_t *client;
 };
 
 #endif //DIPROXY_INMEMORYMESSAGEREPOSITORY_H
