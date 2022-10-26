@@ -5,6 +5,8 @@
 
 #include "domain/MessageService.h"
 
+std::string toJson(const Message& message);
+
 class DataEndpoint {
 public:
   DataEndpoint(MessageService& messageService): messageService(messageService) {}

@@ -1,5 +1,6 @@
 #include <sstream>
 #include <queue>
+#include <mongoc/mongoc.h>
 
 #include "httplib.h"
 #include "boost/algorithm/string.hpp"
@@ -38,8 +39,6 @@ constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
 mongoc_client_t *client;
-int prx_dbg = 0;
-/* fixme: setting value through command line: --prxdbg */
 
 int main(int argc, char* argv[]) {
   if(argc < 3) {
@@ -49,6 +48,10 @@ int main(int argc, char* argv[]) {
 
   auto buildScriptPath = argv[1];
   auto executeScriptPath = argv[2];
+
+  mongoc_init();
+  client = mongoc_client_new("mongodb://localhost:27017/?appname=prx");
+  /* fixme: set URI through cli */
 
   /**
    * INIT OBJECTS
@@ -125,4 +128,5 @@ int main(int argc, char* argv[]) {
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
+  /* fixme: mongoc_cleanup() on exit */
 }
