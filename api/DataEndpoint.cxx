@@ -27,7 +27,26 @@ std::string toJson(const Message& message) {
   doc.AddMember("splitPayloadParts", Value(message.splitPayloadParts), alloc);
   doc.AddMember("payloadSerialization", Value(message.payloadSerialization.c_str(), alloc), alloc);
   doc.AddMember("payloadSplitIndex", Value(message.payloadSplitIndex), alloc);
-  doc.AddMember("payload", Value(message.payload.c_str(), alloc), alloc);
+
+  if(message.payloadSerialization == "ARROW" || message.payloadSerialization == "ROOT") {
+    Value payloadValue;
+    payloadValue.SetObject();
+
+    Document payloadDocument;
+    payloadDocument.Parse(message.payload.c_str(), message.payload.size());
+    for(auto it = payloadDocument.MemberBegin(); it != payloadDocument.MemberEnd(); it++) {
+      Value name;
+      name.CopyFrom(it->name, alloc);
+      Value val;
+      val.CopyFrom(it->value, alloc);
+
+      payloadValue.AddMember(name, val, alloc);
+    }
+
+    doc.AddMember("payload", payloadValue, alloc);
+  } else {
+    doc.AddMember("payload", Value(message.payload.c_str(), alloc), alloc);
+  }
 
   if(message.payloadEndianness.has_value())
     doc.AddMember("payloadEndianness", Value(message.payloadEndianness.value().c_str(), alloc), alloc);
