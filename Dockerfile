@@ -7,4 +7,4 @@ WORKDIR /app/proxy/build
 RUN cmake ..
 RUN cmake --build .
 
-CMD ["./proxy"]
+CMD ["./proxy", "../scripts/buildWorkflow", "../scripts/executeWorkflow"]
