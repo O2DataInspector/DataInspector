@@ -15,7 +15,7 @@ void AnalysisEndpoint::importAnalysis(const httplib::Request& input, httplib::Re
 }
 
 void AnalysisEndpoint::getBuildStatus(const httplib::Request& input, httplib::Response& output) {
-  auto analysisId = input.get_param_value("analysisId");
+  auto analysisId = input.get_header_value("analysisId");
 
   auto analysis = analysisService.get(analysisId);
   if(analysis.buildStatus == Analysis::BuildStatus::OK) {
@@ -34,7 +34,7 @@ void AnalysisEndpoint::getBuildStatus(const httplib::Request& input, httplib::Re
 }
 
 void AnalysisEndpoint::listWorkflows(const httplib::Request& input, httplib::Response& output) {
-  auto analysisId = input.get_param_value("analysisId");
+  auto analysisId = input.get_header_value("analysisId");
   auto workflows = analysisService.listWorkflows(analysisId);
 
   std::vector<std::string> jsonNames;
@@ -45,7 +45,7 @@ void AnalysisEndpoint::listWorkflows(const httplib::Request& input, httplib::Res
   output.set_content("{\"workflows\":[" + boost::join(jsonNames, ",") + "]}", "application/json");
 }
 
-void AnalysisEndpoint::startAnalysis(const httplib::Request& input, httplib::Response& output) {
+void AnalysisEndpoint::startRun(const httplib::Request& input, httplib::Response& output) {
   rapidjson::Document document;
   document.Parse(input.body.c_str());
 
@@ -53,12 +53,12 @@ void AnalysisEndpoint::startAnalysis(const httplib::Request& input, httplib::Res
   auto& workflow = document.FindMember("workflow")->value;
   auto& config = document.FindMember("config")->value;
 
-  auto runId = analysisService.startAnalysis(std::string{analysisId.GetString(), analysisId.GetStringLength()}, std::string{workflow.GetString(), workflow.GetStringLength()}, std::string{config.GetString(), config.GetStringLength()});
+  auto runId = analysisService.startRun(std::string{analysisId.GetString(), analysisId.GetStringLength()}, std::string{workflow.GetString(), workflow.GetStringLength()}, std::string{config.GetString(), config.GetStringLength()});
 
   output.set_content("{\"id\":\"" + runId + "\"}", "application/json");
 }
 
-void AnalysisEndpoint::stopAnalysis(const httplib::Request& input, httplib::Response& output) {
-  auto runId = input.get_param_value("runId");
-  analysisService.sopAnalysis(runId);
+void AnalysisEndpoint::stopRun(const httplib::Request& input, httplib::Response& output) {
+  auto runId = input.get_header_value("runId");
+  analysisService.stopRun(runId);
 }

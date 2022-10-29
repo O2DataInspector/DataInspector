@@ -21,8 +21,8 @@ public:
   std::string importAnalysis(const std::string& path, const std::string& name);
   Analysis get(const std::string& analysisId);
   std::vector<std::string> listWorkflows(const std::string& analysisId);
-  std::string startAnalysis(const std::string& analysisId, const std::string& workflow, const std::string& config);
-  void sopAnalysis(const std::string& runId);
+  std::string startRun(const std::string& analysisId, const std::string& workflow, const std::string& config);
+  void stopRun(const std::string& runId);
 
 private:
   RunManager& runManager;

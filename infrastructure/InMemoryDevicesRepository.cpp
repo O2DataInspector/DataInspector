@@ -68,7 +68,7 @@ void InMemoryDevicesRepository::terminate(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::intercept" << std::endl;
   for(auto& deviceWithSocket : devices[runId]) {
-    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::TERMINATE});
+    deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::TERMINATE});
   }
   devicesMutex.unlock();
 }
@@ -77,7 +77,7 @@ void InMemoryDevicesRepository::intercept(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::intercept" << std::endl;
   for(auto& deviceWithSocket : devices[runId]) {
-    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
+    deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_ON});
   }
   devicesMutex.unlock();
 }
@@ -88,11 +88,11 @@ void InMemoryDevicesRepository::intercept(const std::string& runId, const std::v
 
   for(auto& deviceWithSocket : devices[runId]) {
     if(std::find(deviceNames.begin(), deviceNames.end(), deviceWithSocket.device.name) == deviceNames.end()) {
-      deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
+      deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
       continue;
     }
 
-    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::INSPECT_ON});
+    deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_ON});
   }
   devicesMutex.unlock();
 }
@@ -104,7 +104,7 @@ void InMemoryDevicesRepository::stopInterception(const std::string& runId, const
     if(std::find(deviceNames.begin(), deviceNames.end(), deviceWithSocket.device.name) == deviceNames.end())
       continue;
 
-    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
+    deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
   }
   devicesMutex.unlock();
 }
@@ -113,7 +113,7 @@ void InMemoryDevicesRepository::stopInterception(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::stopInterception" << std::endl;
   for(auto& deviceWithSocket : devices[runId]) {
-    deviceWithSocket.socket->send(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
+    deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
   }
   devicesMutex.unlock();
 }

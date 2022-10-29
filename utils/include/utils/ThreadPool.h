@@ -19,6 +19,7 @@ public:
   ThreadPool(int size);
   void addJob(const Job& job);
   void stop();
+  int size();
 
 private:
   void loop();

@@ -1,12 +1,8 @@
 #include "domain/BuildManager.h"
 #include <iostream>
 
-BuildManager::BuildManager(const std::string& scriptPath, AnalysisRepository &analysisRepository) : scriptPath(scriptPath), analysisRepository(analysisRepository), threadPool(2), ioContext(),
+BuildManager::BuildManager(const std::string& scriptPath, AnalysisRepository &analysisRepository) : scriptPath(scriptPath), analysisRepository(analysisRepository), threadPool(1), ioContext(),
                                                                      work(ioContext) {
-  threadPool.addJob([this]() {
-    ioContext.run();
-  });
-
   threadPool.addJob([this]() {
     ioContext.run();
   });

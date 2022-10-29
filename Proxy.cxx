@@ -32,7 +32,10 @@ constexpr char IMPORT_ANALYSIS_ENDPOINT[]   = "/analysis/import";
 constexpr char ANALYSIS_STATUS_ENDPOINT[]   = "/analysis/status";
 constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analysis/workflows";
 constexpr char START_ANALYSIS_ENDPOINT[]    = "/analysis/start";
-constexpr char STOP_ANALYSIS_ENDPOINT[]    = "/analysis/stop";
+constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
+
+constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
+constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
 
 int main(int argc, char* argv[]) {
@@ -59,9 +62,8 @@ int main(int argc, char* argv[]) {
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
   AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
-  std::thread socketManagerThread([&devicesRepository, &messageRepository]() -> void{
-    SocketManagerService socketManagerService{8081, messageRepository, devicesRepository};
-  });
+  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
+  socketManagerService.start();
 
   /// API
   DataEndpoint dataEndpoint{messageService};
@@ -76,6 +78,8 @@ int main(int argc, char* argv[]) {
 
   /// DATA
   addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
+  addEndpoint(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
+  addEndpoint(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
 
   /// DEVICES
   addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));
@@ -87,8 +91,8 @@ int main(int argc, char* argv[]) {
   addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
   addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
   addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
-  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startAnalysis));
-  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopAnalysis));
+  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startRun));
+  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopRun));
 
 
 
@@ -118,6 +122,4 @@ int main(int argc, char* argv[]) {
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
-
-  socketManagerThread.join();
 }

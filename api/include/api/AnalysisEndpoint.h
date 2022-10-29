@@ -11,8 +11,8 @@ public:
   void importAnalysis(const httplib::Request& input, httplib::Response& output);
   void getBuildStatus(const httplib::Request& input, httplib::Response& output);
   void listWorkflows(const httplib::Request& input, httplib::Response& output);
-  void startAnalysis(const httplib::Request& input, httplib::Response& output);
-  void stopAnalysis(const httplib::Request& input, httplib::Response& output);
+  void startRun(const httplib::Request& input, httplib::Response& output);
+  void stopRun(const httplib::Request& input, httplib::Response& output);
 
 private:
   AnalysisService& analysisService;
