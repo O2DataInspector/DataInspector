@@ -85,7 +85,7 @@ void DataEndpoint::newerMessages(const httplib::Request& input, httplib::Respons
   std::vector<std::string> devicesNames{};
   std::string devicesString = input.get_header_value("devices");
   boost::split(devicesNames, devicesString, boost::is_any_of(","));
-  auto time = boost::lexical_cast<uint64_t>(input.get_header_value("time"));
+  auto messageId = input.get_header_value("id");
   auto runId = input.get_header_value("runId");
 
   int count = std::numeric_limits<int>::max();
@@ -93,7 +93,7 @@ void DataEndpoint::newerMessages(const httplib::Request& input, httplib::Respons
     count = std::stoi(input.get_header_value("count"));
 
   std::vector<std::string> idsJson{};
-  auto ids = messageService.newerMessages(runId, time, devicesNames, count);
+  auto ids = messageService.newerMessages(runId, messageId, devicesNames, count);
   std::transform(ids.begin(), ids.end(), std::back_inserter(idsJson), [](const std::string& id) {
     return "\"" + id + "\"";
   });
