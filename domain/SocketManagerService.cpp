@@ -53,17 +53,8 @@ Message toDomain(const DIMessage& diMessage) {
   msg.payloadSerialization = std::string{payloadSerializationValue.GetString(), payloadSerializationValue.GetStringLength()};
   msg.payloadSplitIndex = doc.FindMember("payloadSplitIndex")->value.Get<uint32_t>();
 
-  if(msg.payloadSerialization == "ARROW" || msg.payloadSerialization == "ROOT") {
-    rapidjson::Document payloadDoc;
-    payloadDoc.CopyFrom(doc.FindMember("payload")->value, payloadDoc.GetAllocator());
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    payloadDoc.Accept(writer);
-    msg.payload = std::string{buffer.GetString(), buffer.GetSize()};
-  } else {
-    auto& payloadValue = doc.FindMember("payload")->value;
-    msg.payload = std::string{payloadValue.GetString(), payloadValue.GetStringLength()};
-  }
+  auto& payloadValue = doc.FindMember("payload")->value;
+  msg.payload = std::string{payloadValue.GetString(), payloadValue.GetStringLength()};
 
   if(doc.HasMember("payloadEndianness")) {
     auto& endiannessValue = doc.FindMember("payloadEndianness")->value;

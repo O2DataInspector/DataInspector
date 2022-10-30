@@ -5,6 +5,20 @@
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
 
+#include "serialization/RootSerialization.h"
+#include "serialization/ArrowSerialization.h"
+#include "utils/Base64.h"
+
+#include "arrow/buffer.h"
+#include <arrow/builder.h>
+#include <arrow/memory_pool.h>
+#include <arrow/record_batch.h>
+#include <arrow/table.h>
+#include <arrow/type_traits.h>
+#include <arrow/status.h>
+#include <arrow/io/memory.h>
+#include <arrow/ipc/reader.h>
+
 std::string toJson(const Message& message) {
   using namespace rapidjson;
 
@@ -27,13 +41,43 @@ std::string toJson(const Message& message) {
   doc.AddMember("splitPayloadParts", Value(message.splitPayloadParts), alloc);
   doc.AddMember("payloadSerialization", Value(message.payloadSerialization.c_str(), alloc), alloc);
   doc.AddMember("payloadSplitIndex", Value(message.payloadSplitIndex), alloc);
+  doc.AddMember("binPayload", Value(message.payload.c_str(), alloc), alloc);
 
-  if(message.payloadSerialization == "ARROW" || message.payloadSerialization == "ROOT") {
+  if(message.payloadSerialization == "ARROW") {
+    auto binData = Base64::decode(message.payload);
+    auto buffer = std::make_shared<arrow::Buffer>((uint8_t*) binData.data(), binData.size());
+
+    auto bufferReader = std::make_shared<arrow::io::BufferReader>(buffer);
+
+    auto readerResult = arrow::ipc::RecordBatchStreamReader::Open(bufferReader);
+    std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
+    auto batchReader = readerResult.ValueOrDie();
+    while (true) {
+      std::shared_ptr<arrow::RecordBatch> batch;
+      auto next = batchReader->ReadNext(&batch);
+      if (batch == nullptr) {
+        break;
+      }
+      batches.push_back(batch);
+    }
+
+    auto tableResult = arrow::Table::FromRecordBatches(batches);
+
+    Value jsonValue;
+    auto json = ArrowSerialization::toJson(tableResult.ValueOrDie());
+    jsonValue.CopyFrom(json, alloc);
+
+    doc.AddMember("payload", jsonValue, alloc);
+  } else if(message.payloadSerialization == "ROOT") {
+    auto binData = Base64::decode(message.payload);
+    auto obj = RootSerialization::deserialize((uint8_t*) binData.data(), binData.size());
+
+    TString json = TBufferJSON::ToJSON(obj.get());
     Value payloadValue;
     payloadValue.SetObject();
 
     Document payloadDocument;
-    payloadDocument.Parse(message.payload.c_str(), message.payload.size());
+    payloadDocument.Parse(json.Data());
     for(auto it = payloadDocument.MemberBegin(); it != payloadDocument.MemberEnd(); it++) {
       Value name;
       name.CopyFrom(it->name, alloc);
@@ -44,8 +88,6 @@ std::string toJson(const Message& message) {
     }
 
     doc.AddMember("payload", payloadValue, alloc);
-  } else {
-    doc.AddMember("payload", Value(message.payload.c_str(), alloc), alloc);
   }
 
   if(message.payloadEndianness.has_value())
