@@ -1,3 +1,4 @@
+#include <rapidjson/document.h>
 #include "serialization/RootSerialization.h"
 
 /// SOURCE: ALICE O2
@@ -9,7 +10,15 @@ public:
   RootDeserializationHelper(void* buf, Int_t len) : TMessage(buf, len) { ResetBit(kIsOwner); }
 };
 
-std::unique_ptr<TObject> RootSerialization::deserialize(uint8_t* data, int32_t size) {
+rapidjson::Document RootSerialization::toJson(TObject* obj) {
+  TString json = TBufferJSON::ToJSON(obj);
+  rapidjson::Document doc;
+  doc.Parse(json.Data());
+
+  return doc;
+}
+
+std::unique_ptr<TObject> RootSerialization::toObject(uint8_t* data, int32_t size) {
   TClass* tgtClass = TClass::GetClass(typeid(TObject));
   if (tgtClass == nullptr) {
     throw std::runtime_error("class is not ROOT-serializable: " + std::string{typeid(TObject).name()});

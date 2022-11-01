@@ -1,6 +1,10 @@
 #ifndef DIPROXY_HTTPUTIL_H
 #define DIPROXY_HTTPUTIL_H
 
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include "serialization/JsonSerialization.h"
+
 enum class HTTPMethod {
   GET,
   POST,
@@ -8,7 +12,27 @@ enum class HTTPMethod {
   DELETE_
 };
 
-std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandling(const std::function<void(const httplib::Request&, httplib::Response&)>& processRequest) {
+template <typename T>
+std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandling(const std::function<T(const httplib::Request&, httplib::Response&)>& processRequest) {
+  return [processRequest](const httplib::Request& input, httplib::Response& output) {
+    try {
+      auto responseBody = processRequest(input, output);
+      auto responseDoc = toJson(responseBody);
+
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+      responseDoc.Accept(writer);
+
+      output.set_content(std::string{buffer.GetString(), buffer.GetSize()}, "application/json");
+    } catch (std::exception& e) {
+      std::cout << "ERROR: " << e.what() << std::endl;
+      output.status = 500;
+    }
+  };
+}
+
+template <>
+std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandling<void>(const std::function<void(const httplib::Request&, httplib::Response&)>& processRequest) {
   return [processRequest](const httplib::Request& input, httplib::Response& output) {
     try {
       processRequest(input, output);
@@ -19,7 +43,8 @@ std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandli
   };
 }
 
-void addEndpoint(httplib::Server& handle, HTTPMethod method, const std::string& path, const std::function<void(const httplib::Request&, httplib::Response&)>& endpointFunc) {
+template <typename T>
+void addEndpoint(httplib::Server& handle, HTTPMethod method, const std::string& path, const std::function<T(const httplib::Request&, httplib::Response&)>& endpointFunc) {
   switch (method) {
     case HTTPMethod::GET: {
       handle.Get(path, withErrorHandling(endpointFunc));
@@ -40,7 +65,7 @@ void addEndpoint(httplib::Server& handle, HTTPMethod method, const std::string& 
   }
 }
 
-#define ENDPOINT_MEMBER_FUNC(object, func) [&object](const httplib::Request& input, httplib::Response& output) { object.func(input, output); }
+#define ENDPOINT_MEMBER_FUNC(object, func) [&object](const httplib::Request& input, httplib::Response& output) -> decltype(object.func(input, output)) { return object.func(input, output); }
 
 
 #endif //DIPROXY_HTTPUTIL_H

@@ -5,7 +5,8 @@
 #include "TBufferJSON.h"
 
 namespace RootSerialization {
-  std::unique_ptr<TObject> deserialize(uint8_t* data, int32_t size);
+  std::unique_ptr<TObject> toObject(uint8_t* data, int32_t size);
+  rapidjson::Document toJson(TObject* obj);
 }
 
 #endif //DIPROXY_ROOTSERIALIZATION_H

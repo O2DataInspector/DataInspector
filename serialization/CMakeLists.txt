@@ -1,5 +1,6 @@
 find_package(ROOT REQUIRED)
 find_package(Arrow REQUIRED)
+find_package(RapidJSON)
 
 include_directories(${PROJECT_SOURCE_DIR}/serialization/include)
 add_library(serialization RootSerialization.cpp ArrowSerialization.cpp)

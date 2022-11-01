@@ -42,6 +42,8 @@ private:
   rapidjson::Value value;
 };
 
+/// SOURCE: https://github.com/apache/arrow/blob/master/cpp/examples/arrow/rapidjson_row_converter.cc
+
 /// \brief Builder that holds state for a single conversion.
 ///
 /// Implements Visit() methods for each type of Arrow Array that set the values
@@ -204,6 +206,26 @@ public:
     return arrow::MakeFlattenIterator(std::move(nested_iter));
   }
 };  // ArrowToDocumentConverter
+
+std::shared_ptr<arrow::Table> ArrowSerialization::toTable(uint8_t* data, size_t size) {
+  auto buffer = std::make_shared<arrow::Buffer>(data, size);
+
+  auto bufferReader = std::make_shared<arrow::io::BufferReader>(buffer);
+
+  auto readerResult = arrow::ipc::RecordBatchStreamReader::Open(bufferReader);
+  std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
+  auto batchReader = readerResult.ValueOrDie();
+  while (true) {
+    std::shared_ptr<arrow::RecordBatch> batch;
+    auto next = batchReader->ReadNext(&batch);
+    if (batch == nullptr) {
+      break;
+    }
+    batches.push_back(batch);
+  }
+
+  return arrow::Table::FromRecordBatches(batches).ValueOrDie();
+}
 
 rapidjson::Document ArrowSerialization::toJson(std::shared_ptr<arrow::Table> &table) {
   rapidjson::Document doc = std::nullptr_t{};

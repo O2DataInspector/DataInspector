@@ -57,18 +57,18 @@ int main(int argc, char* argv[]) {
   InMemoryRunRepository runRepository;
 
   /// SERVICES
-  BuildManager buildManager{buildScriptPath, analysisRepository};
-  RunManager runManager{executeScriptPath, devicesRepository};
+  // BuildManager buildManager{buildScriptPath, analysisRepository};
+  // RunManager runManager{executeScriptPath, devicesRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
-  AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
+  // AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
   SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
   socketManagerService.start();
 
   /// API
   DataEndpoint dataEndpoint{messageService};
   DevicesEndpoint devicesEndpoint{devicesService};
-  AnalysisEndpoint analysisEndpoint{analysisService};
+  // AnalysisEndpoint analysisEndpoint{analysisService};
 
 
   /**
@@ -77,22 +77,22 @@ int main(int argc, char* argv[]) {
   httplib::Server handle;
 
   /// DATA
-  addEndpoint(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
-  addEndpoint(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
-  addEndpoint(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
+  addEndpoint<Response::MessageList>(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
+  addEndpoint<Response::MessageHeaderList>(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
+  addEndpoint<Message>(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
 
   /// DEVICES
-  addEndpoint(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));
-  addEndpoint(handle, HTTPMethod::GET, STOP_INSPECTION_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, unselectAll));
-  addEndpoint(handle, HTTPMethod::GET, SELECT_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectDevices));
-  addEndpoint(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
+  addEndpoint<Response::DeviceList>(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));
+  addEndpoint<void>(handle, HTTPMethod::GET, STOP_INSPECTION_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, unselectAll));
+  addEndpoint<void>(handle, HTTPMethod::GET, SELECT_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectDevices));
+  addEndpoint<void>(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
 
   /// ANALYSIS
-  addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
-  addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
-  addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
-  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startRun));
-  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopRun));
+//  addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
+//  addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
+//  addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
+//  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startRun));
+//  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopRun));
 
 
 

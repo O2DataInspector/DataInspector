@@ -4,6 +4,7 @@
 #include "httplib.h"
 
 #include "domain/DevicesService.h"
+#include "api/response/DeviceList.h"
 
 class DevicesEndpoint {
 public:
@@ -12,7 +13,7 @@ public:
   void selectDevices(const httplib::Request& input, httplib::Response& output);
   void selectAll(const httplib::Request& input, httplib::Response& output);
   void unselectAll(const httplib::Request& input, httplib::Response& output);
-  void getDevices(const httplib::Request& input, httplib::Response& output);
+  Response::DeviceList getDevices(const httplib::Request& input, httplib::Response& output);
 
 private:
   DevicesService& devicesService;

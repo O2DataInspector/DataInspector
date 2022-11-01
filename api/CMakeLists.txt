@@ -1,4 +1,3 @@
-find_package(RapidJSON)
 find_package(httplib REQUIRED)
 find_package(Arrow REQUIRED)
 

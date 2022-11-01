@@ -6,6 +6,7 @@
 #include "arrow/table.h"
 
 namespace ArrowSerialization {
+std::shared_ptr<arrow::Table> toTable(uint8_t* data, size_t size);
   rapidjson::Document toJson(std::shared_ptr<arrow::Table>& table);
 }
 
