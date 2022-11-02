@@ -7,6 +7,8 @@
 #include "ArrowSerialization.h"
 #include "RootSerialization.h"
 #include "api/response/DeviceList.h"
+#include "api/response/MessageList.h"
+#include "api/response/MessageHeaderList.h"
 
 template <typename T>
 rapidjson::Document toJson(const T& t);
@@ -121,10 +123,12 @@ rapidjson::Document toJson<Device>(const Device& device) {
     inputVal.AddMember("sourceChannel", Value(input.sourceChannel.c_str(), alloc), alloc);
     inputVal.AddMember("timeslice", Value(input.timeslice), alloc);
 
-    inputVal.AddMember("dataDescriptorMatcher", Value(input.dataDescriptorMatcher), alloc);
-    inputVal.AddMember("origin", Value(input.origin.c_str(), alloc), alloc);
-    inputVal.AddMember("description", Value(input.description.c_str(), alloc), alloc);
-    inputVal.AddMember("subSpec", Value(input.subSpec), alloc);
+    if(input.origin.has_value())
+      inputVal.AddMember("origin", Value(input.origin.value().c_str(), alloc), alloc);
+    if(input.description.has_value())
+      inputVal.AddMember("description", Value(input.description.value().c_str(), alloc), alloc);
+    if(input.subSpec.has_value())
+      inputVal.AddMember("subSpec", Value(input.subSpec.value()), alloc);
 
     inputs.PushBack(inputVal, alloc);
   }
@@ -142,8 +146,8 @@ rapidjson::Document toJson<Device>(const Device& device) {
 
     outputVal.AddMember("origin", Value(output.origin.c_str(), alloc), alloc);
     outputVal.AddMember("description", Value(output.description.c_str(), alloc), alloc);
-    outputVal.AddMember("subSpec", Value(output.subSpec), alloc);
-
+    if(output.subSpec.has_value())
+      outputVal.AddMember("subSpec", Value(output.subSpec.value()), alloc);
     outputs.PushBack(outputVal, alloc);
   }
   specs.AddMember("outputs", outputs, alloc);
@@ -158,10 +162,12 @@ rapidjson::Document toJson<Device>(const Device& device) {
     forwardVal.AddMember("timeslice", Value(forward.timeslice), alloc);
     forwardVal.AddMember("maxTimeslices", Value(forward.maxTimeslices), alloc);
 
-    forwardVal.AddMember("dataDescriptorMatcher", Value(forward.dataDescriptorMatcher), alloc);
-    forwardVal.AddMember("origin", Value(forward.origin.c_str(), alloc), alloc);
-    forwardVal.AddMember("description", Value(forward.description.c_str(), alloc), alloc);
-    forwardVal.AddMember("subSpec", Value(forward.subSpec), alloc);
+    if(forward.origin.has_value())
+      forwardVal.AddMember("origin", Value(forward.origin.value().c_str(), alloc), alloc);
+    if(forward.description.has_value())
+      forwardVal.AddMember("description", Value(forward.description.value().c_str(), alloc), alloc);
+    if(forward.subSpec.has_value())
+      forwardVal.AddMember("subSpec", Value(forward.subSpec.value()), alloc);
 
     forwards.PushBack(forwardVal, alloc);
   }
