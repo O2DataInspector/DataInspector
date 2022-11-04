@@ -4,14 +4,16 @@
 #include "httplib.h"
 
 #include "domain/MessageService.h"
+#include "api/response/MessageList.h"
+#include "api/response/MessageHeaderList.h"
 
 class DataEndpoint {
 public:
   DataEndpoint(MessageService& messageService): messageService(messageService) {}
 
-  void getMessages(const httplib::Request& input, httplib::Response& output);
-  void getMessage(const httplib::Request& input, httplib::Response& output);
-  void newerMessages(const httplib::Request& input, httplib::Response& output);
+  Response::MessageList getMessages(const httplib::Request& input, httplib::Response& output);
+  Message getMessage(const httplib::Request& input, httplib::Response& output);
+  Response::MessageHeaderList newerMessages(const httplib::Request& input, httplib::Response& output);
 
 private:
   MessageService& messageService;

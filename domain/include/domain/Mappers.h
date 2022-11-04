@@ -12,7 +12,6 @@ std::vector<Input> toDomain(const std::vector<DIMessages::RegisterDevice::Specs:
       .binding = input.binding,
       .sourceChannel = input.sourceChannel,
       .timeslice = input.timeslice,
-      .dataDescriptorMatcher = input.dataDescriptorMatcher,
       .origin = input.origin,
       .description = input.description,
       .subSpec = input.subSpec
@@ -47,7 +46,6 @@ std::vector<Forward> toDomain(const std::vector<DIMessages::RegisterDevice::Spec
             .timeslice = forward.timeslice,
             .maxTimeslices = forward.maxTimeslices,
             .channel = forward.channel,
-            .dataDescriptorMatcher = forward.dataDescriptorMatcher,
             .origin = forward.origin,
             .description = forward.description,
             .subSpec = forward.subSpec

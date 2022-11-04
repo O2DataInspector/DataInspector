@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <boost/optional.hpp>
 
 struct Input
 {
@@ -10,10 +11,9 @@ struct Input
   std::string sourceChannel;
   size_t timeslice;
 
-  bool dataDescriptorMatcher;
-  std::string origin;
-  std::string description;
-  uint32_t subSpec;
+  boost::optional<std::string> origin;
+  boost::optional<std::string> description;
+  boost::optional<uint32_t> subSpec;
 };
 
 struct Output
@@ -25,7 +25,7 @@ struct Output
 
   std::string origin;
   std::string description;
-  uint32_t subSpec;
+  boost::optional<uint32_t> subSpec;
 };
 
 struct Forward
@@ -35,10 +35,9 @@ struct Forward
   size_t maxTimeslices;
   std::string channel;
 
-  bool dataDescriptorMatcher;
-  std::string origin;
-  std::string description;
-  uint32_t subSpec;
+  boost::optional<std::string> origin;
+  boost::optional<std::string> description;
+  boost::optional<uint32_t> subSpec;
 };
 
 struct Specs
