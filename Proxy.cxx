@@ -15,12 +15,13 @@
 #include "domain/BuildManager.h"
 #include "domain/RunManager.h"
 
-#include "infrastructure/InMemoryMessageRpository.h"
+#include "infrastructure/MongoMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
-#include "infrastructure/InMemoryAnalysisRepository.h"
+#include "infrastructure/MongoAnalysisRepository.h"
 #include "infrastructure/InMemoryRunRepository.h"
 
 #include "HTTPUtil.h"
+#include "mongoc.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -46,13 +47,17 @@ int main(int argc, char* argv[]) {
   auto buildScriptPath = argv[1];
   auto executeScriptPath = argv[2];
 
+  mongoc_init();
+  auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
+  auto* client = mongoc_client_new_from_uri(uri);
+
   /**
    * INIT OBJECTS
    */
   /// INFRASTRUCTURE
-  InMemoryMessageRepository messageRepository;
+  MongoMessageRepository messageRepository{client};
   InMemoryDevicesRepository devicesRepository;
-  InMemoryAnalysisRepository analysisRepository;
+  MongoAnalysisRepository analysisRepository{client};
   InMemoryRunRepository runRepository;
 
   /// SERVICES
@@ -120,4 +125,8 @@ int main(int argc, char* argv[]) {
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
+
+  mongoc_uri_destroy(uri);
+  mongoc_client_destroy(client);
+  mongoc_cleanup();
 }
