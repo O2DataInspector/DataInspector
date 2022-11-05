@@ -7,7 +7,7 @@
 
 class MongoAnalysisRepository: public AnalysisRepository {
 public:
-  MongoAnalysisRepository(mongoc_client_t* client): client(client) {};
+  MongoAnalysisRepository(mongoc_client_pool_t* pool): pool(pool) {};
 
   std::string save(const Analysis& analysis) override;
   Analysis get(const std::string& analysisId) override;
@@ -15,7 +15,7 @@ public:
   void updateStatus(const std::string& analysisId, Analysis::BuildStatus status) override;
 
 private:
-  mongoc_client_t* client;
+  mongoc_client_pool_t* pool;
 };
 
 #endif //DIPROXY_MONGOANALYSISREPOSITORY_H

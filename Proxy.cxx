@@ -49,15 +49,15 @@ int main(int argc, char* argv[]) {
 
   mongoc_init();
   auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
-  auto* client = mongoc_client_new_from_uri(uri);
+  auto* pool = mongoc_client_pool_new (uri);
 
   /**
    * INIT OBJECTS
    */
   /// INFRASTRUCTURE
-  MongoMessageRepository messageRepository{client};
+  MongoMessageRepository messageRepository{pool};
   InMemoryDevicesRepository devicesRepository;
-  MongoAnalysisRepository analysisRepository{client};
+  MongoAnalysisRepository analysisRepository{pool};
   InMemoryRunRepository runRepository;
 
   /// SERVICES
@@ -127,6 +127,6 @@ int main(int argc, char* argv[]) {
   handle.listen(address, port);
 
   mongoc_uri_destroy(uri);
-  mongoc_client_destroy(client);
+  mongoc_client_pool_destroy(pool);
   mongoc_cleanup();
 }

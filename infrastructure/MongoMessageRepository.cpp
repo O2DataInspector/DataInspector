@@ -4,6 +4,11 @@
 
 std::string MongoMessageRepository::addMessage(const std::string& runId, const Message& message) {
   //TODO
+
+  auto* client = mongoc_client_pool_pop (pool);
+  //....
+  mongoc_client_pool_push (pool, client);
+
   throw std::runtime_error("Not implemented");
 }
 
