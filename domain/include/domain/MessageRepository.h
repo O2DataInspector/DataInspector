@@ -10,7 +10,6 @@ public:
 
   virtual std::string addMessage(const std::string& runId, const Message& message) = 0;
   virtual Message getMessage(const std::string& id) = 0;
-  virtual std::vector<Message> getOldestMessages(const std::string& runId, int count) = 0;
   virtual std::vector<Message> newerMessages(const std::string& runId, const std::string& messageId, const std::vector<std::string>& devices, int count) = 0;
 };
 

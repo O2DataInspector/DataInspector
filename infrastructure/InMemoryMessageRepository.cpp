@@ -39,32 +39,6 @@ Message InMemoryMessageRepository::getMessage(const std::string& id) {
   throw std::runtime_error("Id not found");
 }
 
-std::vector<Message> InMemoryMessageRepository::getOldestMessages(const std::string& runId, int count) {
-  std::vector<Message> response{};
-  messageMutex.lock();
-  std::cout << "MessageRepository::getOldestMessages" << std::endl;
-
-  auto& analysisMessages = messages[runId];
-
-  if(analysisMessages.empty()) {
-    std::cout << "EMPTY" << std::endl;
-    messageMutex.unlock();
-    return response;
-  }
-
-  uint64_t realCount = std::min((uint64_t) analysisMessages.size(), (uint64_t) count);
-  for(int i=0; i<realCount; i++) {
-    response.emplace_back(analysisMessages.front());
-    analysisMessages.pop_front();
-  }
-
-  std::cout << "SIZE - " << response.size() << std::endl;
-
-  messageMutex.unlock();
-
-  return response;
-}
-
 std::vector<Message> InMemoryMessageRepository::newerMessages(const std::string& runId, const std::string& messageId, const std::vector<std::string>& devices, int count) {
   std::vector<Message> response{};
   messageMutex.lock();
