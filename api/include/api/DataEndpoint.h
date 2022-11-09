@@ -11,7 +11,6 @@ class DataEndpoint {
 public:
   DataEndpoint(MessageService& messageService): messageService(messageService) {}
 
-  Response::MessageList getMessages(const httplib::Request& input, httplib::Response& output);
   Message getMessage(const httplib::Request& input, httplib::Response& output);
   Response::MessageHeaderList newerMessages(const httplib::Request& input, httplib::Response& output);
 

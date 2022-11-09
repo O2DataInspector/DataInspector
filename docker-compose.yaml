@@ -13,6 +13,7 @@ services:
 
   diProxy:
     image: arczipt/di-proxy
+    restart: on-failure
     ports:
       - "8081:8081"
       - "8082:8082"

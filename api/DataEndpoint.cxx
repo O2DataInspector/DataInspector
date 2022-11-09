@@ -8,13 +8,6 @@ Message DataEndpoint::getMessage(const httplib::Request& input, httplib::Respons
   return messageService.getMessage(msgId);
 }
 
-Response::MessageList DataEndpoint::getMessages(const httplib::Request &input, httplib::Response &output) {
-  auto count = std::stoi(input.get_header_value("count"));
-  auto runId = input.get_header_value("runId");
-
-  return {messageService.getOldestMessages(runId, count)};
-}
-
 Response::MessageHeaderList DataEndpoint::newerMessages(const httplib::Request& input, httplib::Response& output) {
   std::vector<std::string> devicesNames{};
   std::string devicesString = input.get_header_value("devices");

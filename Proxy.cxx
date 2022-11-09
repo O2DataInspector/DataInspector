@@ -15,16 +15,16 @@
 #include "domain/BuildManager.h"
 #include "domain/RunManager.h"
 
-#include "infrastructure/InMemoryMessageRpository.h"
+#include "infrastructure/MongoMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
-#include "infrastructure/InMemoryAnalysisRepository.h"
+#include "infrastructure/MongoAnalysisRepository.h"
 #include "infrastructure/InMemoryRunRepository.h"
 
 #include "HTTPUtil.h"
+#include "mongoc.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
-constexpr char INSPECTED_DATA_ENDPOINT[]    = "/inspected-data";
 constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
@@ -37,7 +37,6 @@ constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
-
 int main(int argc, char* argv[]) {
   if(argc < 3) {
     std::cout << "Usage: proxy <build-script> <execute-script>" << std::endl;
@@ -47,13 +46,17 @@ int main(int argc, char* argv[]) {
   auto buildScriptPath = argv[1];
   auto executeScriptPath = argv[2];
 
+  mongoc_init();
+  auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
+  auto* pool = mongoc_client_pool_new (uri);
+
   /**
    * INIT OBJECTS
    */
   /// INFRASTRUCTURE
-  InMemoryMessageRepository messageRepository;
+  MongoMessageRepository messageRepository{pool};
   InMemoryDevicesRepository devicesRepository;
-  InMemoryAnalysisRepository analysisRepository;
+  MongoAnalysisRepository analysisRepository{pool};
   InMemoryRunRepository runRepository;
 
   /// SERVICES
@@ -77,7 +80,6 @@ int main(int argc, char* argv[]) {
   httplib::Server handle;
 
   /// DATA
-  addEndpoint<Response::MessageList>(handle, HTTPMethod::GET, INSPECTED_DATA_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessages));
   addEndpoint<Response::MessageHeaderList>(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
   addEndpoint<Message>(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
 
@@ -122,4 +124,8 @@ int main(int argc, char* argv[]) {
   auto port = 8082;
   std::cout << "STARTING PROXY ON " << address << ":" << port << std::endl;
   handle.listen(address, port);
+
+  mongoc_uri_destroy(uri);
+  mongoc_client_pool_destroy(pool);
+  mongoc_cleanup();
 }
