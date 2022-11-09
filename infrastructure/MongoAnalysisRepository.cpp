@@ -14,7 +14,7 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   std::vector<std::string> logs_copy = analysis.logs;
 
   client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "prx", "anl");
+  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
   doc = bson_new();
 
   bson_oid_init(&oid, NULL);
@@ -61,7 +61,7 @@ Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
   /* uncomment line above when 'runId' header will be required */
 
   client = mongoc_client_pool_pop (pool);
-  collection = mongoc_client_get_collection(client, "prx", "anl");
+  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
   
   query = bson_new();
   bson_oid_init_from_string(&oid, analysisId.c_str());
@@ -119,7 +119,7 @@ void MongoAnalysisRepository::appendLogs(const std::string& analysisId, const st
   char key[200];
 
   client = mongoc_client_pool_pop (pool);
-  collection = mongoc_client_get_collection(client, "prx", "anl");
+  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
 
   bson_oid_init_from_string(&oid, analysisId.c_str());
   query = BCON_NEW("_id", BCON_OID(&oid));
@@ -179,7 +179,7 @@ void MongoAnalysisRepository::updateStatus(const std::string& analysisId, Analys
   mongoc_collection_t *collection;
 
   client = mongoc_client_pool_pop (pool);
-  collection = mongoc_client_get_collection(client, "prx", "anl");
+  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
 
   bson_oid_init_from_string(&oid, analysisId.c_str());
   query = BCON_NEW("_id", BCON_OID(&oid));
