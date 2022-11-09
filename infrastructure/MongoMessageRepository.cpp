@@ -5,8 +5,6 @@
 #include <bson/bson.h>
 #include <mongoc/mongoc.h>
 
-extern mongoc_client_pool_t *pool;
-
 std::string MongoMessageRepository::addMessage(const std::string& runId, const Message& message) {
 
 

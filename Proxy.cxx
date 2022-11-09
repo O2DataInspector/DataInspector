@@ -37,8 +37,6 @@ constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 
-mongoc_client_pool_t *pool;
-
 int main(int argc, char* argv[]) {
   if(argc < 3) {
     std::cout << "Usage: proxy <build-script> <execute-script>" << std::endl;
@@ -49,9 +47,8 @@ int main(int argc, char* argv[]) {
   auto executeScriptPath = argv[2];
 
   mongoc_init();
-  //mongoc_uri_t *uri = mongoc_uri_new("mongodb://localhost:27017/?appname=prx");
-  mongoc_uri_t *uri = mongoc_uri_new(std::getenv("MONGO_URL"));
-  pool = mongoc_client_pool_new (uri);
+  auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
+  auto* pool = mongoc_client_pool_new (uri);
 
   /**
    * INIT OBJECTS

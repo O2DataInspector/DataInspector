@@ -1,8 +1,6 @@
 #include "infrastructure/MongoAnalysisRepository.h"
 #include <stdexcept>
 
-extern mongoc_client_pool_t *pool;
-
 std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   bson_t *doc;
   bson_t child;
@@ -15,7 +13,7 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   int i = 0;
   std::vector<std::string> logs_copy = analysis.logs;
 
-  client = mongoc_client_pool_pop (pool);
+  client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "prx", "anl");
   doc = bson_new();
 
