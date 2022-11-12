@@ -46,6 +46,10 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   return id;
 }
 
+std::vector<Analysis> MongoAnalysisRepository::getAnalyses(int page, int count) {
+  return {};
+}
+
 Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
   bson_oid_t oid;
   bson_iter_t iter;

@@ -287,4 +287,85 @@ rapidjson::Document toJson<Stats>(const Stats& stats) {
   return doc;
 }
 
+template <>
+rapidjson::Document toJson<Response::AnalysisBuildStatus>(const Response::AnalysisBuildStatus& buildStatus) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  doc.AddMember("buildStatus", rapidjson::Value(buildStatus.status.c_str(), alloc), alloc);
+
+  rapidjson::Value listValue;
+  listValue.SetArray();
+  for(auto& log : buildStatus.logs) {
+    listValue.PushBack(rapidjson::Value(log.c_str(), alloc), alloc);
+  }
+  doc.AddMember("logs", listValue, alloc);
+
+  return doc;
+}
+
+template <>
+rapidjson::Document toJson<Response::AnalysisId>(const Response::AnalysisId& analysisId) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  doc.AddMember("analysisId", rapidjson::Value(analysisId.analysisId.c_str(), alloc), alloc);
+  return doc;
+}
+
+template <>
+rapidjson::Document toJson<Response::AnalysisList::Analysis>(const Response::AnalysisList::Analysis& analysis) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  doc.AddMember("buildStatus", rapidjson::Value(analysis.buildStatus.c_str(), alloc), alloc);
+  doc.AddMember("name", rapidjson::Value(analysis.name.c_str(), alloc), alloc);
+  doc.AddMember("id", rapidjson::Value(analysis.id.c_str(), alloc), alloc);
+  doc.AddMember("path", rapidjson::Value(analysis.path.c_str(), alloc), alloc);
+
+  return doc;
+}
+
+template <>
+rapidjson::Document toJson<Response::AnalysisList>(const Response::AnalysisList& analysisList) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  std::vector<rapidjson::Document> objDocs{};
+  std::transform(analysisList.analyses.begin(), analysisList.analyses.end(), std::back_inserter(objDocs), [](const Response::AnalysisList::Analysis& analysis) {
+    return toJson(analysis);
+  });
+
+  rapidjson::Value listValue;
+  listValue.SetArray();
+  for(auto& objDoc : objDocs) {
+    rapidjson::Value objValue;
+    objValue.CopyFrom(objDoc, alloc);
+    listValue.PushBack(objValue, alloc);
+  }
+
+  doc.AddMember("analyses", listValue, alloc);
+  return doc;
+}
+
+template <>
+rapidjson::Document toJson<Response::WorkflowList>(const Response::WorkflowList& workflowList) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  rapidjson::Value listValue;
+  listValue.SetArray();
+  for(auto& workflow : workflowList.workflows) {
+    listValue.PushBack(rapidjson::Value(workflow.c_str(), alloc), alloc);
+  }
+
+  doc.AddMember("workflows", listValue, alloc);
+  return doc;
+}
+
 #endif //DIPROXY_JSONSERIALIZATION_H

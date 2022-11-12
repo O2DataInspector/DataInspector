@@ -17,6 +17,21 @@ std::string InMemoryAnalysisRepository::save(const Analysis& analysis) {
   return id;
 }
 
+std::vector<Analysis> InMemoryAnalysisRepository::getAnalyses(int page, int size) {
+  std::cout << "InMemoryAnalysisRepository::getAnalyses" << std::endl;
+
+  std::vector<Analysis> found{};
+
+  analysisMutex.lock();
+  int begin = page * size;
+  int end = begin + size;
+
+  found.insert(found.end(), analyses.begin() + begin, analyses.end() + end);
+  analysisMutex.unlock();
+
+  return found;
+}
+
 Analysis InMemoryAnalysisRepository::get(const std::string& analysisId) {
   std::cout << "InMemoryAnalysisRepository::get" << std::endl;
   analysisMutex.lock();
