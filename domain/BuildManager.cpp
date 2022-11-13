@@ -1,10 +1,21 @@
 #include "domain/BuildManager.h"
 #include <iostream>
 
-BuildManager::BuildManager(const std::string& scriptPath, AnalysisRepository &analysisRepository) : scriptPath(scriptPath), analysisRepository(analysisRepository), threadPool(1), ioContext(),
-                                                                     work(ioContext) {
+BuildManager::BuildManager(const std::string& scriptPath, AnalysisRepository &analysisRepository) : scriptPath(scriptPath), analysisRepository(analysisRepository), threadPool(1), ioContext() {
   threadPool.addJob([this]() {
-    ioContext.run();
+    while (true) {
+      BuildTask task;
+      {
+        std::unique_lock lk(buildQueueMutex);
+        cvBuildQueue.wait(lk, [this]{return !buildQueue.empty();});
+
+        task = buildQueue.front();
+        buildQueue.pop_front();
+      }
+
+      startBuild(task);
+      ioContext.run();
+    }
   });
 }
 
@@ -22,40 +33,48 @@ void BuildManager::readUntilEOF(BuildContext* ctx, const std::string& analysisId
   });
 }
 
-void BuildManager::build(const std::string &analysisId, const std::string &path) {
+void BuildManager::startBuild(const BuildTask& task) {
+  analysisRepository.updateStatus(task.analysisId, Analysis::BuildStatus::IN_PROGRESS);
+
   auto* ctx = new BuildContext{
-    .pipe = boost::process::async_pipe(ioContext)
+          .pipe = boost::process::async_pipe(ioContext)
   };
 
   ctx->process = boost::process::child(
           boost::process::search_path("bash"),
           scriptPath,
-          path,
-          analysisId,
+          task.url,
+          task.branch,
+          task.analysisId,
           boost::process::std_out > ctx->pipe,
           ioContext,
-          boost::process::on_exit([this, analysisId](int e, std::error_code ec) {
+          boost::process::on_exit([this, task](int e, std::error_code ec) {
             std::cout << "BUILD FINISHED: " << e << std::endl;
 
             if(e == 0) {
-              analysisRepository.updateStatus(analysisId, Analysis::BuildStatus::OK);
+              analysisRepository.updateStatus(task.analysisId, Analysis::BuildStatus::OK);
             } else {
-              analysisRepository.updateStatus(analysisId, Analysis::BuildStatus::ERROR);
+              analysisRepository.updateStatus(task.analysisId, Analysis::BuildStatus::ERROR);
             }
 
-            remove(analysisId);
+            //remove current build context
+            ctxsMutex.lock();
+            delete ctxs[task.analysisId];
+            ctxs.erase(task.analysisId);
+            ctxsMutex.unlock();
           }));
 
-  readUntilEOF(ctx, analysisId);
+  readUntilEOF(ctx, task.analysisId);
 
   ctxsMutex.lock();
-  ctxs[analysisId] = ctx;
+  ctxs[task.analysisId] = ctx;
   ctxsMutex.unlock();
 }
 
-void BuildManager::remove(const std::string &analysisId) {
-  ctxsMutex.lock();
-  delete ctxs[analysisId];
-  ctxs.erase(analysisId);
-  ctxsMutex.unlock();
+void BuildManager::build(const std::string& analysisId, const std::string& url, const std::string& branch) {
+  {
+    std::unique_lock lk(buildQueueMutex);
+    buildQueue.push_back(BuildTask{analysisId, url, branch});
+  }
+  cvBuildQueue.notify_one();
 }

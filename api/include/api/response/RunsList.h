@@ -1,0 +1,27 @@
+#ifndef DIPROXY_RUNSLIST_H
+#define DIPROXY_RUNSLIST_H
+
+#include <vector>
+#include <string>
+
+namespace Response {
+struct RunsList {
+  struct Analysis {
+    std::string id;
+    std::string url;
+    std::string name;
+    std::string branch;
+  };
+
+  struct Run {
+    std::string id;
+    std::string config;
+    std::string workflow;
+    Analysis analysis;
+  };
+
+  std::vector<Run> runs;
+};
+}
+
+#endif //DIPROXY_RUNSLIST_H

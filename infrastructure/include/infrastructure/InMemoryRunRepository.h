@@ -11,7 +11,7 @@ public:
 
   std::string save(const Run& run) override;
   Run get(const std::string& runId) override;
-  std::vector<Run> getAnalysisRuns(const std::string& analysisId) override;
+  std::vector<Run> listRuns() override;
 
 private:
   std::mutex runMutex;

@@ -1,9 +1,9 @@
 #include "domain/AnalysesService.h"
 #include <iostream>
 
-std::string AnalysesService::importAnalysis(const std::string& path, const std::string& name) {
-  auto analysisId = analysisRepository.save(Analysis{"", Analysis::BuildStatus::NOT_STARTED, {}, path, name});
-  buildManager.build(analysisId, path);
+std::string AnalysesService::importAnalysis(const std::string& name, const std::string& url, const std::string& branch) {
+  auto analysisId = analysisRepository.save(Analysis{"", Analysis::BuildStatus::NOT_STARTED, {}, name, url, branch});
+  buildManager.build(analysisId, url, branch);
 
   return analysisId;
 }
@@ -16,19 +16,14 @@ Analysis AnalysesService::get(const std::string& analysisId) {
   return analysisRepository.get(analysisId);
 }
 
-std::vector<std::string> findWorkflows(const std::string& buildPath) {
+std::vector<std::string> AnalysesService::listWorkflows(const std::string& analysisId) {
   std::vector<std::string> workflows;
-  auto analysesPath = std::string{std::getenv("ANALYSES_PATH")};
 
-  boost::filesystem::recursive_directory_iterator it(analysesPath + buildPath), end;
+  boost::filesystem::recursive_directory_iterator it(basePath + "latest-build-" + analysisId + "-o2/bin"), end;
   while (it != end) {
     workflows.push_back(it->path().filename().string());
     ++it;
   }
 
   return workflows;
-}
-
-std::vector<std::string> AnalysesService::listWorkflows(const std::string& analysisId) {
-  return findWorkflows(analysisId + "/BUILD/workflows");
 }

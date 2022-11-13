@@ -7,6 +7,7 @@
 #include "api/DataEndpoint.h"
 #include "api/DevicesEndpoint.h"
 #include "api/AnalysesEndpoint.h"
+#include "api/RunsEndpoint.h"
 
 #include "domain/MessageService.h"
 #include "domain/DevicesService.h"
@@ -14,6 +15,7 @@
 #include "domain/AnalysesService.h"
 #include "domain/BuildManager.h"
 #include "domain/RunManager.h"
+#include "domain/RunsService.h"
 
 #include "infrastructure/MongoMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
@@ -67,7 +69,8 @@ int main(int argc, char* argv[]) {
 
   /// SERVICES
   BuildManager buildManager{buildScriptPath, analysisRepository};
-  // RunManager runManager{executeScriptPath, devicesRepository};
+  RunManager runManager{executeScriptPath, devicesRepository};
+  RunsService runsService{runManager, runRepository, analysisRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
   AnalysesService analysesService{buildManager, analysisRepository};
@@ -78,6 +81,7 @@ int main(int argc, char* argv[]) {
   DataEndpoint dataEndpoint{messageService};
   DevicesEndpoint devicesEndpoint{devicesService};
   AnalysesEndpoint analysesEndpoint{analysesService};
+  RunsEndpoint runsEndpoint{runsService};
 
 
   /**
@@ -102,6 +106,11 @@ int main(int argc, char* argv[]) {
   addEndpoint<Response::AnalysisBuildStatus>(handle, HTTPMethod::GET, ANALYSES_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getBuildStatus));
   addEndpoint<Response::WorkflowList>(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, listWorkflows));
 
+
+  /// RUNS
+  addEndpoint<Response::RunId>(handle, HTTPMethod::POST, START_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, start));
+  addEndpoint<void>(handle, HTTPMethod::POST, STOP_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, stop));
+  addEndpoint<Response::RunsList>(handle, HTTPMethod::GET, LIST_RUNS_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, listRuns));
 
 
   /**

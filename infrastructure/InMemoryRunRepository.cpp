@@ -26,17 +26,12 @@ Run InMemoryRunRepository::get(const std::string& runId) {
   return run;
 }
 
-std::vector<Run> InMemoryRunRepository::getAnalysisRuns(const std::string& analysisId) {
-  std::cout << "InMemoryRunRepository::getAnalysisRuns" << std::endl;
+std::vector<Run> InMemoryRunRepository::listRuns() {
+  std::cout << "InMemoryRunRepository::listRuns" << std::endl;
   std::vector<Run> analysisRuns{};
 
   runMutex.lock();
-  for(auto& run : runs) {
-    if(run.analysisId != analysisId)
-      continue;
-
-    analysisRuns.emplace_back(run);
-  }
+  analysisRuns = runs;
   runMutex.unlock();
 
   return analysisRuns;

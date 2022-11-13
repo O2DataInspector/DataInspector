@@ -6,8 +6,9 @@ struct AnalysisList {
   struct Analysis {
     std::string id;
     std::string buildStatus;
-    std::string path;
+    std::string url;
     std::string name;
+    std::string branch;
   };
 
   std::vector<Analysis> analyses;

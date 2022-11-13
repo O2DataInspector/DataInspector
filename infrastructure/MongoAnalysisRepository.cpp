@@ -20,7 +20,7 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   bson_oid_init(&oid, NULL);
   BSON_APPEND_OID(doc, "_id", &oid);
 
-  BSON_APPEND_UTF8(doc, "path", analysis.path.c_str());
+  BSON_APPEND_UTF8(doc, "url", analysis.url.c_str());
   BSON_APPEND_UTF8(doc, "name", analysis.name.c_str());
   BSON_APPEND_INT32(doc, "buildStatus", (int) analysis.buildStatus);
   BSON_APPEND_ARRAY_BEGIN(doc, "logs", &child);
@@ -91,8 +91,8 @@ Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
    	}
         analysis.logs = queue;
 
-	bson_iter_init_find(&iter, doc, "path");
-	analysis.path = bson_iter_utf8(&iter, NULL);
+	bson_iter_init_find(&iter, doc, "url");
+	analysis.url = bson_iter_utf8(&iter, NULL);
 
 	bson_iter_init_find(&iter, doc, "name");
 	analysis.name = bson_iter_utf8(&iter, NULL);
@@ -144,7 +144,7 @@ void MongoAnalysisRepository::appendLogs(const std::string& analysisId, const st
   	docc = bson_new();
   	BSON_APPEND_OID(docc, "_id", &oid);
 
-  	BSON_APPEND_UTF8(docc, "path", analysis.path.c_str());
+  	BSON_APPEND_UTF8(docc, "url", analysis.url.c_str());
   	BSON_APPEND_UTF8(docc, "name", analysis.name.c_str());
   	BSON_APPEND_INT32(docc, "buildStatus", (int) analysis.buildStatus);
   	BSON_APPEND_ARRAY_BEGIN(docc, "logs", &child);

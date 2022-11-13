@@ -1,14 +1,14 @@
 #!/bin/bash
 
-DI_O2_BUILD_PATH="$WORK_DIR/$ALIBUILD_ARCH_PREFIX/$O2_VERSION"
-
 RUN_ID="$1"
 ANALYSIS_ID="$2"
 WORKFLOW="$3"
+CONFIG="$4"
+BUILD_PATH="$WORK_DIR/$ALIBUILD_ARCH_PREFIX/O2Physics/build-$ANALYSIS_ID-local1"
 
-source "$DI_O2_BUILD_PATH/etc/profile.d/init.sh"
+source "$BUILD_PATH/etc/profile.d/init.sh"
 
-PROG="$ANALYSES_PATH/$ANALYSIS_ID/BUILD/workflows/$WORKFLOW"
+PROG="$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH"/"$RUN_ID"
-cd "$RUNS_PATH"/"$RUN_ID" || exit
-$PROG --batch --inspector --inspector-id "$RUN_ID"
+cd "$RUNS_PATH/$RUN_ID" || exit
+$PROG "$CONFIG" --batch --inspector --inspector-id "$RUN_ID"

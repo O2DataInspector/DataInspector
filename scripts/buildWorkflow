@@ -1,19 +1,17 @@
 #!/bin/bash
 
-DI_O2_BUILD_PATH="$WORK_DIR/$ALIBUILD_ARCH_PREFIX/$O2_VERSION"
-
 GITHUB_URL="$1"
-ANALYSIS_ID="$2"
+BRANCH="$2"
+ANALYSIS_ID="$3"
 
-cd "$ANALYSES_PATH" || exit
-mkdir "$ANALYSIS_ID"
-cd "$ANALYSIS_ID" || exit
+cd "$O2PHYSICS_PATH" || exit
 
-git clone "$GITHUB_URL" CODE
-mkdir BUILD
-cd BUILD || exit
+REMOTE_NAME="source-$ANALYSIS_ID"
+BRANCH_NAME="build-$ANALYSIS_ID"
 
-source "$DI_O2_BUILD_PATH/etc/profile.d/init.sh"
+git remote add "$REMOTE_NAME" "$GITHUB_URL"
+git fetch "$REMOTE_NAME"
+git checkout -b "$BRANCH_NAME" "$REMOTE_NAME/$BRANCH"
 
-cmake ../CODE -DlibjalienO2_ROOT="$LIBJALIENO2_ROOT"
-cmake --build .
+cd ../
+aliBuild build O2Physics --defaults o2

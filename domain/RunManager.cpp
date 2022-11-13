@@ -7,13 +7,14 @@ RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devices
   });
 }
 
-void RunManager::start(const Run& run, const Analysis& analysis, const std::string& config) {
+void RunManager::start(const Run& run, const Analysis& analysis) {
   auto* process = new boost::process::child(
           boost::process::search_path("bash"),
           scriptPath,
           run.id,
           analysis.id,
           run.workflow,
+          run.config,
           ioContext,
           boost::process::on_exit([this, run](int e, std::error_code ec) {
             std::cout << "RUN FINISHED" << std::endl;

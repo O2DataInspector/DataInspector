@@ -10,9 +10,10 @@ class AnalysesService {
 public:
   AnalysesService(BuildManager& buildManager, AnalysisRepository& analysisRepository):
           buildManager(buildManager),
-          analysisRepository(analysisRepository) {};
+          analysisRepository(analysisRepository),
+          basePath(std::string{std::getenv("WORK_DIR")} + std::string{std::getenv("ALIBUILD_ARCH_PREFIX")} + "O2Physics/") {};
 
-  std::string importAnalysis(const std::string& path, const std::string& name);
+  std::string importAnalysis(const std::string& name, const std::string& url, const std::string& branch);
   std::vector<Analysis> getAnalyses(int page, int count);
   Analysis get(const std::string& analysisId);
   std::vector<std::string> listWorkflows(const std::string& analysisId);
@@ -20,6 +21,8 @@ public:
 private:
   BuildManager& buildManager;
   AnalysisRepository& analysisRepository;
+
+  std::string basePath;
 };
 
 #endif //DIPROXY_ANALYSISSERVICE_H

@@ -16,8 +16,9 @@ struct Analysis {
   BuildStatus buildStatus;
   std::vector<std::string> logs;
 
-  std::string path;
   std::string name;
+  std::string url;
+  std::string branch;
 };
 
 #endif //DIPROXY_ANALYSIS_H

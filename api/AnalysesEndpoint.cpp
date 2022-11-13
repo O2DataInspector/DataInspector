@@ -6,9 +6,10 @@
 
 Response::AnalysisId AnalysesEndpoint::importAnalysis(const httplib::Request& input, httplib::Response& output) {
   auto name = input.get_header_value("name");
-  auto path = input.get_header_value("path");
+  auto url = input.get_header_value("url");
+  auto branch = input.get_header_value("branch");
 
-  auto analysisId = analysesService.importAnalysis(path, name);
+  auto analysisId = analysesService.importAnalysis(name, url, branch);
   return {analysisId};
 }
 
@@ -56,7 +57,7 @@ Response::AnalysisList AnalysesEndpoint::getAnalyses(const httplib::Request& inp
     return Response::AnalysisList::Analysis{
       analysis.id,
       toString(analysis.buildStatus),
-      analysis.path,
+      analysis.url,
       analysis.name
     };
   });
