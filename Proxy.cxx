@@ -36,6 +36,7 @@ constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
 
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
+constexpr char STATS_ENDPOINT[]             = "/stats";
 
 int main(int argc, char* argv[]) {
   if(argc < 3) {
@@ -82,6 +83,7 @@ int main(int argc, char* argv[]) {
   /// DATA
   addEndpoint<Response::MessageHeaderList>(handle, HTTPMethod::GET, NEWER_MESSAGES_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, newerMessages));
   addEndpoint<Message>(handle, HTTPMethod::GET, GET_MESSAGE_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getMessage));
+  addEndpoint<Stats>(handle, HTTPMethod::GET, STATS_ENDPOINT, ENDPOINT_MEMBER_FUNC(dataEndpoint, getStats));
 
   /// DEVICES
   addEndpoint<Response::DeviceList>(handle, HTTPMethod::GET, AVAILABLE_DEVICES_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, getDevices));

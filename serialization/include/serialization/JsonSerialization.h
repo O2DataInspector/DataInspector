@@ -245,5 +245,45 @@ rapidjson::Document toJson<Response::MessageHeaderList>(const Response::MessageH
   return doc;
 }
 
+template <>
+rapidjson::Document toJson<Stats>(const Stats& stats) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  doc.AddMember("totalMessages", rapidjson::Value(stats.totalMessages), alloc);
+  doc.AddMember("totalData", rapidjson::Value(stats.totalData), alloc);
+
+  rapidjson::Value timestampsValue;
+  timestampsValue.SetArray();
+  rapidjson::Value countsValue;
+  countsValue.SetArray();
+  rapidjson::Value sizesValue;
+  sizesValue.SetArray();
+  for(auto& entry : stats.data) {
+    timestampsValue.PushBack(rapidjson::Value(std::get<0>(entry)), alloc);
+    countsValue.PushBack(rapidjson::Value(std::get<1>(entry)), alloc);
+    sizesValue.PushBack(rapidjson::Value(std::get<2>(entry)), alloc);
+  }
+  doc.AddMember("x", timestampsValue, alloc);
+  doc.AddMember("yNumbers", countsValue, alloc);
+  doc.AddMember("yData", sizesValue, alloc);
+
+  doc.AddMember("minMsgSize", rapidjson::Value(stats.sizeStats.min), alloc);
+  doc.AddMember("avgMsgSize", rapidjson::Value(stats.sizeStats.avg), alloc);
+  doc.AddMember("maxMsgSize", rapidjson::Value(stats.sizeStats.max), alloc);
+
+  doc.AddMember("minDuration", rapidjson::Value(stats.durationStats.min), alloc);
+  doc.AddMember("avgDuration", rapidjson::Value(stats.durationStats.avg), alloc);
+  doc.AddMember("maxDuration", rapidjson::Value(stats.durationStats.max), alloc);
+
+  doc.AddMember("minStartTime", rapidjson::Value(stats.startTimeRange.min), alloc);
+  doc.AddMember("maxStartTime", rapidjson::Value(stats.startTimeRange.max), alloc);
+
+  doc.AddMember("minCreationTime", rapidjson::Value(stats.creationTimeRange.min), alloc);
+  doc.AddMember("maxCreationTime", rapidjson::Value(stats.creationTimeRange.max), alloc);
+
+  return doc;
+}
 
 #endif //DIPROXY_JSONSERIALIZATION_H

@@ -11,22 +11,22 @@ struct Range {
 };
 
 struct StatsRequest {
-  std::string device;
-  std::string origin;
-  std::string description;
-  uint32_t subSpecification;
-  uint32_t firstTForbit;
-  uint32_t tfCounter;
-  uint32_t runNumber;
-  std::string taskHash;
-  std::string payloadSerialiation;
-  uint32_t payloadParts;
-  uint32_t payloadSplitIndex;
-  std::optional<Range<uint64_t>> startTimeRange;
-  std::optional<Range<uint64_t>> creationTimerRange;
-  std::optional<Range<uint64_t>> durationRange;
-  std::optional<Range<uint64_t>> payloadSizeRange;
-  uint64_t count;
+  std::optional<std::string> device;
+  std::optional<std::string> origin;
+  std::optional<std::string> description;
+  std::optional<uint32_t> subSpecification;
+  std::optional<uint32_t> firstTForbit;
+  std::optional<uint32_t> tfCounter;
+  std::optional<uint32_t> runNumber;
+  std::optional<std::string> taskHash;
+  std::optional<std::string> payloadSerialization;
+  std::optional<uint32_t> payloadParts;
+  std::optional<uint32_t> payloadSplitIndex;
+  std::optional<Range<uint64_t>> StartTimeRange;
+  std::optional<Range<uint64_t>> CreationTimeRange;
+  std::optional<Range<uint64_t>> DurationRange;
+  std::optional<Range<uint64_t>> PayloadSizeRange;
+  std::optional<uint64_t> count;
 };
 
 #endif //DIPROXY_STATSREQUEST_H

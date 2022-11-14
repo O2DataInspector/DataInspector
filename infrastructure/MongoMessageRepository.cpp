@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <bson/bson.h>
 #include <mongoc/mongoc.h>
+#include <boost/algorithm/string.hpp>
 
 std::string MongoMessageRepository::addMessage(const std::string& runId, const Message& message) {
   std::cout << "MongoMessageRepository::addMessage" << std::endl;
@@ -237,6 +238,160 @@ std::vector<Message> MongoMessageRepository::newerMessages(const std::string& ru
   pipeline = &pipe;
   bson_init_from_json(pipeline, query.c_str(), -1, NULL);
   
+  cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, pipeline, NULL, NULL);
+
+  while(mongoc_cursor_next(cursor, &doc))
+  {
+    Message message;
+
+    bson_iter_init_find(&iter, doc, "creationTimer");
+    bson_iter_decimal128(&iter, &dec128);
+    bson_decimal128_to_string(&dec128, creat);
+    message.creationTimer = strtoul(creat, NULL, 10);
+
+    bson_iter_init_find(&iter, doc, "sender");
+    message.sender = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "duration");
+    message.duration = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "startTime");
+    message.startTime = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "origin");
+    message.origin = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "description");
+    message.description = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "subSpecification");
+    message.subSpecification = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "firstTForbit");
+    message.firstTForbit = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "tfCounter");
+    message.tfCounter = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "runNumber");
+    message.runNumber = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "payloadSize");
+    message.payloadSize = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "splitPayloadParts");
+    message.splitPayloadParts = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "payloadSerialization");
+    message.payloadSerialization = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "payloadSplitIndex");
+    message.payloadSplitIndex = bson_iter_int32(&iter);
+
+    bson_iter_init_find(&iter, doc, "payload");
+    message.payload = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "_id");
+    oid_ptr = bson_iter_oid(&iter);
+    bson_oid_to_string(oid_ptr, str_oid);
+    message.id = str_oid;
+
+    response.emplace_back(message);
+  }
+  mongoc_collection_destroy(collection);
+  mongoc_cursor_destroy(cursor);
+  mongoc_client_pool_push (pool, client);
+
+  return response;
+}
+
+std::string paramQuery(const std::string& name, const std::string& value) {
+  return R"(")" + name + R"(": ")" + value + R"(")";
+}
+
+std::string paramQuery(const std::string& name, const uint32_t& value) {
+  return R"(")" + name + R"(": )" + std::to_string(value);
+}
+
+template <typename T>
+std::string paramQuery(const std::string& name, const Range<T>& value) {
+  std::string query;
+  if(value.begin.has_value() && value.end.has_value()) {
+    query = R"({"$gte": )" + std::to_string(value.begin.value()) + R"(, "$lte": )" + std::to_string(value.end.value()) + "}";
+  } else if(value.begin.has_value()) {
+    query = R"({"$gte": )" + std::to_string(value.begin.value()) + "}";
+  } else {
+    query = R"({"$lte": )" + std::to_string(value.end.value()) + "}";
+  }
+
+  return R"(")" + name + R"(":)" + query;
+}
+
+std::vector<Message> MongoMessageRepository::search(const StatsRequest& request) {
+  std::vector<std::string> queries{};
+
+  if(request.device.has_value())
+    queries.emplace_back(paramQuery("sender", request.device.value()));
+  if(request.origin.has_value())
+    queries.emplace_back(paramQuery("origin", request.origin.value()));
+  if(request.description.has_value())
+    queries.emplace_back(paramQuery("description", request.description.value()));
+  if(request.subSpecification.has_value())
+    queries.emplace_back(paramQuery("subSpecification", request.subSpecification.value()));
+  if(request.firstTForbit.has_value())
+    queries.emplace_back(paramQuery("firstTForbit", request.firstTForbit.value()));
+  if(request.tfCounter.has_value())
+    queries.emplace_back(paramQuery("tfCounter", request.tfCounter.value()));
+  if(request.runNumber.has_value())
+    queries.emplace_back(paramQuery("runNumber", request.runNumber.value()));
+  if(request.taskHash.has_value())
+    queries.emplace_back(paramQuery("taskHash", request.taskHash.value()));
+  if(request.payloadSerialization.has_value())
+    queries.emplace_back(paramQuery("payloadSerialization", request.payloadSerialization.value()));
+  if(request.payloadParts.has_value())
+    queries.emplace_back(paramQuery("payloadParts", request.payloadParts.value()));
+  if(request.payloadSplitIndex.has_value())
+    queries.emplace_back(paramQuery("payloadSplitIndex", request.payloadSplitIndex.value()));
+
+  if(request.StartTimeRange.has_value())
+    queries.emplace_back(paramQuery("startTime", request.StartTimeRange.value()));
+  if(request.payloadSplitIndex.has_value())
+    queries.emplace_back(paramQuery("creationTimer", request.CreationTimeRange.value()));
+  if(request.payloadSplitIndex.has_value())
+    queries.emplace_back(paramQuery("duration", request.DurationRange.value()));
+  if(request.payloadSplitIndex.has_value())
+    queries.emplace_back(paramQuery("payloadSize", request.PayloadSizeRange.value()));
+
+  std::optional<uint64_t> count;
+  std::string query = R"({"0": {"$match": {)";
+  query += boost::join(queries, ",");
+  query += "}}";
+  if(request.count.has_value())
+    query += R"(, "1":{"$limit": )" + std::to_string(request.count.value()) + "}";
+  query += "}";
+
+  bson_iter_t iter;
+  bson_t *pipeline;
+  bson_t pipe;
+  bson_decimal128_t dec128;
+  const bson_t *doc;
+  const bson_oid_t *oid_ptr;
+  mongoc_cursor_t *cursor;
+  mongoc_client_t *client;
+  mongoc_collection_t *collection;
+  std::vector<Message> response{};
+
+  char creat[25], str_oid[25], str_count[25];
+
+  /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
+  /* uncomment line above when 'runId' header will be required */
+
+  client = mongoc_client_pool_pop(pool);
+  collection = mongoc_client_get_collection(client, "diProxy", "messages");
+
+  pipeline = &pipe;
+  bson_init_from_json(pipeline, query.c_str(), -1, NULL);
+
   cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, pipeline, NULL, NULL);
 
   while(mongoc_cursor_next(cursor, &doc))

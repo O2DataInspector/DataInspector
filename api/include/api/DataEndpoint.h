@@ -13,6 +13,7 @@ public:
 
   Message getMessage(const httplib::Request& input, httplib::Response& output);
   Response::MessageHeaderList newerMessages(const httplib::Request& input, httplib::Response& output);
+  Stats getStats(const httplib::Request& input, httplib::Response& output);
 
 private:
   MessageService& messageService;
