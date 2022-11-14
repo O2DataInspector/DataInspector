@@ -355,11 +355,11 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
 
   if(request.StartTimeRange.has_value())
     queries.emplace_back(paramQuery("startTime", request.StartTimeRange.value()));
-  if(request.payloadSplitIndex.has_value())
+  if(request.CreationTimeRange.has_value())
     queries.emplace_back(paramQuery("creationTimer", request.CreationTimeRange.value()));
-  if(request.payloadSplitIndex.has_value())
+  if(request.DurationRange.has_value())
     queries.emplace_back(paramQuery("duration", request.DurationRange.value()));
-  if(request.payloadSplitIndex.has_value())
+  if(request.PayloadSizeRange.has_value())
     queries.emplace_back(paramQuery("payloadSize", request.PayloadSizeRange.value()));
 
   std::optional<uint64_t> count;
