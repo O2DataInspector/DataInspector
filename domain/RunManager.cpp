@@ -1,7 +1,7 @@
 #include "domain/RunManager.h"
 #include <iostream>
 
-RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository): scriptPath(scriptPath), devicesRepository(devicesRepository), threadPool(1), ioContext(), work(ioContext) {
+RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository): scriptPath(scriptPath), devicesRepository(devicesRepository), runRepository(runRepository), threadPool(1), ioContext(), work(ioContext) {
   threadPool.addJob([this]() {
     ioContext.run();
   });
@@ -19,6 +19,7 @@ void RunManager::start(const Run& run, const Analysis& analysis) {
           boost::process::on_exit([this, run](int e, std::error_code ec) {
             std::cout << "RUN FINISHED" << std::endl;
             remove(run.id);
+            runRepository.finish(run.id);
           }));
 
   processesMutex.lock();

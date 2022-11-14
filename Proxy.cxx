@@ -20,11 +20,10 @@
 #include "infrastructure/MongoMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
 #include "infrastructure/MongoAnalysisRepository.h"
-#include "infrastructure/InMemoryRunRepository.h"
+#include "infrastructure/MongoRunRepository.h"
 
 #include "HTTPUtil.h"
 #include "mongoc.h"
-#include "infrastructure/InMemoryAnalysisRepository.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -64,8 +63,8 @@ int main(int argc, char* argv[]) {
   /// INFRASTRUCTURE
   MongoMessageRepository messageRepository{pool};
   InMemoryDevicesRepository devicesRepository;
-  InMemoryAnalysisRepository analysisRepository;
-  InMemoryRunRepository runRepository;
+  MongoAnalysisRepository analysisRepository{pool};
+  MongoRunRepository runRepository{pool};
 
   /// SERVICES
   BuildManager buildManager{buildScriptPath, analysisRepository};

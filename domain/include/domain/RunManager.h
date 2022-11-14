@@ -8,10 +8,11 @@
 #include "domain/DevicesRepository.h"
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
+#include "domain/RunRepository.h"
 
 class RunManager {
 public:
-  RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository);
+  RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
   void start(const Run& run, const Analysis& analysis);
   void stop(const std::string& runId);
 
@@ -20,6 +21,7 @@ private:
 
   std::string scriptPath;
   DevicesRepository& devicesRepository;
+  RunRepository& runRepository;
 
   ThreadPool threadPool;
 

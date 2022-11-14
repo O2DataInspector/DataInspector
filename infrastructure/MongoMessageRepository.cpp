@@ -18,9 +18,6 @@ std::string MongoMessageRepository::addMessage(const std::string& runId, const M
 
   char creat[25], str_oid[25];
 
-  /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
-  /* uncomment line above when specifying 'runId' header will be required */
-
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
 
@@ -77,9 +74,6 @@ Message MongoMessageRepository::getMessage(const std::string& id) {
   struct Message message;
 
   char creat[25];
-
-  /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
-  /* uncomment line above when 'runId' header will be required */
 
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
@@ -205,7 +199,7 @@ std::vector<Message> MongoMessageRepository::newerMessages(const std::string& ru
   mongoc_collection_t *collection;
   std::vector<Message> response{};
 
-  char creat[25], str_oid[25], str_count[25];
+  char creat[25], str_oid[25];
 
   for (auto& device : devices) {
     if(strpbrk(device.c_str(), "$:{},'\"") != nullptr){
@@ -395,9 +389,6 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   std::vector<Message> response{};
 
   char creat[25], str_oid[25];
-
-  /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
-  /* uncomment line above when 'runId' header will be required */
 
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
