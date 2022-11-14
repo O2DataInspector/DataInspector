@@ -33,6 +33,7 @@ std::string MongoMessageRepository::addMessage(const std::string& runId, const M
   bson_decimal128_from_string(creat, &dec);
   BSON_APPEND_DECIMAL128(doc, "creationTimer", &dec);
 
+  BSON_APPEND_UTF8(doc, "runId", runId.c_str());
   BSON_APPEND_UTF8(doc, "sender", message.sender.c_str());
   BSON_APPEND_INT32(doc, "duration", message.duration);
   BSON_APPEND_INT32(doc, "startTime", message.startTime);
@@ -217,6 +218,7 @@ std::vector<Message> MongoMessageRepository::newerMessages(const std::string& ru
   if(!messageId.empty()) {
     query += R"("_id":{"$gt":{"$oid":")" + messageId + R"("}},)";
   }
+  query += R"("runId": ")" + runId + R"(",)";
   query += R"("$or":[)";
   for(auto it = devices.begin(); it != devices.end(); it++) {
     query += R"({"sender": ")" + *it + R"("})";
@@ -228,9 +230,6 @@ std::vector<Message> MongoMessageRepository::newerMessages(const std::string& ru
   query += R"("1":{"$sort":{"_id":1}},)";
   query += R"("2":{"$limit":)" + std::to_string(count) + "}";
   query += "}";
-
-  /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
-  /* uncomment line above when 'runId' header will be required */
 
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
@@ -331,6 +330,7 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   auto* match = bson_new();
   auto* limit = bson_new();
 
+  BSON_APPEND_UTF8(match, "runId", request.runId.c_str());
   if(request.device.has_value())
     BSON_APPEND_UTF8(match, "sender", request.device.value().c_str());
   if(request.messageOrigin.has_value())
