@@ -14,12 +14,17 @@ Response::RunsList RunsEndpoint::listRuns(const httplib::Request& input, httplib
   return {runs};
 }
 
+Response::DatasetList RunsEndpoint::listDatasets(const httplib::Request& input, httplib::Response& output) {
+  return {runsService.listDatasets()};
+}
+
 Response::RunId RunsEndpoint::start(const httplib::Request& input, httplib::Response& output) {
   auto analysisId = input.get_header_value("analysisId");
   auto workflow = input.get_header_value("workflow");
   auto config = input.get_header_value("config");
+  auto dataset = input.get_header_value("dataset");
 
-  return {runsService.start(analysisId, workflow, config)};
+  return {runsService.start(analysisId, workflow, config, dataset)};
 }
 
 void RunsEndpoint::stop(const httplib::Request& input, httplib::Response& output) {

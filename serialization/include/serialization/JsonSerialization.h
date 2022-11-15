@@ -433,4 +433,20 @@ rapidjson::Document toJson<Response::RunsList>(const Response::RunsList& runsLis
   return doc;
 }
 
+template <>
+rapidjson::Document toJson<Response::DatasetList>(const Response::DatasetList& datasetList) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  rapidjson::Value listValue;
+  listValue.SetArray();
+  for(auto& dataset : datasetList.datasets) {
+    listValue.PushBack(rapidjson::Value(dataset.c_str(), alloc), alloc);
+  }
+
+  doc.AddMember("datasets", listValue, alloc);
+  return doc;
+}
+
 #endif //DIPROXY_JSONSERIALIZATION_H

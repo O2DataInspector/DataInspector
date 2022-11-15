@@ -38,6 +38,7 @@ constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analyses/workflows";
 
 constexpr char START_RUN_ENDPOINT[]         = "/runs";
 constexpr char STOP_RUN_ENDPOINT[]          = "/runs/stop";
+constexpr char LIST_DATASETS_ENDPOINT[]     = "/runs/datasets";
 constexpr char LIST_RUNS_ENDPOINT[]         = "/runs";
 
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]) {
 
   /// SERVICES
   BuildManager buildManager{buildScriptPath, analysisRepository};
-  RunManager runManager{executeScriptPath, devicesRepository};
+  RunManager runManager{executeScriptPath, devicesRepository, runRepository};
   RunsService runsService{runManager, runRepository, analysisRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
@@ -110,6 +111,7 @@ int main(int argc, char* argv[]) {
   addEndpoint<Response::RunId>(handle, HTTPMethod::POST, START_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, start));
   addEndpoint<void>(handle, HTTPMethod::POST, STOP_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, stop));
   addEndpoint<Response::RunsList>(handle, HTTPMethod::GET, LIST_RUNS_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, listRuns));
+  addEndpoint<Response::DatasetList>(handle, HTTPMethod::GET, LIST_DATASETS_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, listDatasets));
 
 
   /**

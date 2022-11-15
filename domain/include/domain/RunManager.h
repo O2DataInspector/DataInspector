@@ -13,7 +13,7 @@
 class RunManager {
 public:
   RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
-  void start(const Run& run, const Analysis& analysis);
+  void start(const Run& run, const Analysis& analysis, const std::string& dataset);
   void stop(const std::string& runId);
 
 private:
