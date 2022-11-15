@@ -305,74 +305,87 @@ std::vector<Message> MongoMessageRepository::newerMessages(const std::string& ru
   return response;
 }
 
-std::string paramQuery(const std::string& name, const std::string& value) {
-  return R"(")" + name + R"(": ")" + value + R"(")";
-}
+bson_t *paramQuery(const Range<uint64_t>& value) {
+  auto* query = bson_new();
 
-std::string paramQuery(const std::string& name, const uint32_t& value) {
-  return R"(")" + name + R"(": )" + std::to_string(value);
-}
-
-template <typename T>
-std::string paramQuery(const std::string& name, const Range<T>& value) {
-  std::string query;
-  if(value.begin.has_value() && value.end.has_value()) {
-    query = R"({"$gte": )" + std::to_string(value.begin.value()) + R"(, "$lte": )" + std::to_string(value.end.value()) + "}";
-  } else if(value.begin.has_value()) {
-    query = R"({"$gte": )" + std::to_string(value.begin.value()) + "}";
-  } else {
-    query = R"({"$lte": )" + std::to_string(value.end.value()) + "}";
+  if(value.begin.has_value()) {
+    bson_decimal128_t v;
+    bson_decimal128_from_string(std::to_string(value.begin.value()).c_str(), &v);
+    BSON_APPEND_DECIMAL128(query, "$gte", &v);
   }
 
-  return R"(")" + name + R"(":)" + query;
+  if(value.end.has_value()) {
+    bson_decimal128_t v;
+    bson_decimal128_from_string(std::to_string(value.end.value()).c_str(), &v);
+    BSON_APPEND_DECIMAL128(query, "$lte", &v);
+  }
+
+  return query;
 }
 
 std::vector<Message> MongoMessageRepository::search(const StatsRequest& request) {
-  std::vector<std::string> queries{};
+  std::vector<bson_t*> queries{};
+
+  auto* query = bson_new();
+  auto* matchHeader = bson_new();
+  auto* match = bson_new();
+  auto* limit = bson_new();
 
   if(request.device.has_value())
-    queries.emplace_back(paramQuery("sender", request.device.value()));
+    BSON_APPEND_UTF8(match, "sender", request.device.value().c_str());
   if(request.origin.has_value())
-    queries.emplace_back(paramQuery("origin", request.origin.value()));
+    BSON_APPEND_UTF8(match, "origin", request.origin.value().c_str());
   if(request.description.has_value())
-    queries.emplace_back(paramQuery("description", request.description.value()));
+    BSON_APPEND_UTF8(match, "description", request.description.value().c_str());
+
   if(request.subSpecification.has_value())
-    queries.emplace_back(paramQuery("subSpecification", request.subSpecification.value()));
+    BSON_APPEND_INT64(match, "subSpecification", request.subSpecification.value());
   if(request.firstTForbit.has_value())
-    queries.emplace_back(paramQuery("firstTForbit", request.firstTForbit.value()));
+    BSON_APPEND_INT64(match, "firstTForbit", request.firstTForbit.value());
   if(request.tfCounter.has_value())
-    queries.emplace_back(paramQuery("tfCounter", request.tfCounter.value()));
+    BSON_APPEND_INT64(match, "tfCounter", request.tfCounter.value());
   if(request.runNumber.has_value())
-    queries.emplace_back(paramQuery("runNumber", request.runNumber.value()));
+    BSON_APPEND_INT64(match, "runNumber", request.runNumber.value());
   if(request.taskHash.has_value())
-    queries.emplace_back(paramQuery("taskHash", request.taskHash.value()));
+    BSON_APPEND_UTF8(match, "taskHash", request.taskHash.value().c_str());
   if(request.payloadSerialization.has_value())
-    queries.emplace_back(paramQuery("payloadSerialization", request.payloadSerialization.value()));
+    BSON_APPEND_UTF8(match, "payloadSerialization", request.payloadSerialization.value().c_str());
   if(request.payloadParts.has_value())
-    queries.emplace_back(paramQuery("payloadParts", request.payloadParts.value()));
+    BSON_APPEND_INT64(match, "payloadParts", request.payloadParts.value());
   if(request.payloadSplitIndex.has_value())
-    queries.emplace_back(paramQuery("payloadSplitIndex", request.payloadSplitIndex.value()));
+    BSON_APPEND_INT64(match, "payloadSplitIndex", request.payloadSplitIndex.value());
 
-  if(request.StartTimeRange.has_value())
-    queries.emplace_back(paramQuery("startTime", request.StartTimeRange.value()));
-  if(request.CreationTimeRange.has_value())
-    queries.emplace_back(paramQuery("creationTimer", request.CreationTimeRange.value()));
-  if(request.DurationRange.has_value())
-    queries.emplace_back(paramQuery("duration", request.DurationRange.value()));
-  if(request.PayloadSizeRange.has_value())
-    queries.emplace_back(paramQuery("payloadSize", request.PayloadSizeRange.value()));
+  if(request.StartTimeRange.has_value()) {
+    auto* q = paramQuery(request.StartTimeRange.value());
+    BSON_APPEND_DOCUMENT(match, "startTime", q);
+    queries.push_back(q);
+  }
+  if(request.CreationTimeRange.has_value()) {
+    auto* q = paramQuery(request.CreationTimeRange.value());
+    BSON_APPEND_DOCUMENT(match, "creationTimer", q);
+    queries.push_back(q);
+  }
+  if(request.DurationRange.has_value()) {
+    auto* q = paramQuery(request.DurationRange.value());
+    BSON_APPEND_DOCUMENT(match, "duration", q);
+    queries.push_back(q);
+  }
+  if(request.PayloadSizeRange.has_value()) {
+    auto* q = paramQuery(request.PayloadSizeRange.value());
+    BSON_APPEND_DOCUMENT(match, "payloadSize", q);
+    queries.push_back(q);
+  }
 
-  std::optional<uint64_t> count;
-  std::string query = R"({"0": {"$match": {)";
-  query += boost::join(queries, ",");
-  query += "}}";
-  if(request.count.has_value())
-    query += R"(, "1":{"$limit": )" + std::to_string(request.count.value()) + "}";
-  query += "}";
+  BSON_APPEND_DOCUMENT(matchHeader, "$match", match);
+  BSON_APPEND_DOCUMENT(query, "0", matchHeader);
+  if(request.count.has_value()) {
+    bson_decimal128_t v;
+    bson_decimal128_from_string(std::to_string(request.count.value()).c_str(), &v);
+    BSON_APPEND_DECIMAL128(limit, "$limit", &v);
+    BSON_APPEND_DOCUMENT(query, "1", limit);
+  }
 
   bson_iter_t iter;
-  bson_t *pipeline;
-  bson_t pipe;
   bson_decimal128_t dec128;
   const bson_t *doc;
   const bson_oid_t *oid_ptr;
@@ -381,7 +394,7 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   mongoc_collection_t *collection;
   std::vector<Message> response{};
 
-  char creat[25], str_oid[25], str_count[25];
+  char creat[25], str_oid[25];
 
   /* collection = mongoc_client_get_collection(client, "prx", runId.c_str()); */
   /* uncomment line above when 'runId' header will be required */
@@ -389,10 +402,7 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
 
-  pipeline = &pipe;
-  bson_init_from_json(pipeline, query.c_str(), -1, NULL);
-
-  cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, pipeline, NULL, NULL);
+  cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, query, NULL, NULL);
 
   while(mongoc_cursor_next(cursor, &doc))
   {
@@ -455,6 +465,14 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   mongoc_collection_destroy(collection);
   mongoc_cursor_destroy(cursor);
   mongoc_client_pool_push (pool, client);
+
+  bson_destroy(query);
+  bson_destroy(match);
+  bson_destroy(matchHeader);
+  bson_destroy(limit);
+  for(bson_t* q : queries) {
+    bson_destroy(q);
+  }
 
   return response;
 }

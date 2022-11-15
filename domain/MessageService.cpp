@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <numeric>
+#include <iostream>
 
 Message MessageService::getMessage(const std::string& id) {
   return messageRepository.getMessage(id);
@@ -56,8 +57,8 @@ Stats MessageService::search(const StatsRequest& request) {
 
   stats.totalMessages = messages.size();
   stats.totalData = std::transform_reduce(messages.begin(), messages.end(), (uint64_t) 0, std::plus<uint64_t>{}, [](const Message& msg) {return msg.payloadSize;});
-  stats.sizeStats.avg = stats.totalData / stats.totalMessages;
-  stats.durationStats.avg = std::transform_reduce(messages.begin(), messages.end(), (uint64_t) 0, std::plus<uint64_t>{}, [](const Message& msg) {return msg.duration;}) / stats.totalMessages;
+  stats.sizeStats.avg = stats.totalMessages > 0 ? (stats.totalData / stats.totalMessages) : 0;
+  stats.durationStats.avg = stats.totalMessages > 0 ? (std::transform_reduce(messages.begin(), messages.end(), (uint64_t) 0, std::plus<uint64_t>{}, [](const Message& msg) {return msg.duration;}) / stats.totalMessages) : 0;
 
   return stats;
 }
