@@ -12,7 +12,7 @@ struct Range {
 
 struct StatsRequest {
   std::optional<std::string> device;
-  std::optional<std::string> origin;
+  std::optional<std::string> messageOrigin;
   std::optional<std::string> description;
   std::optional<uint32_t> subSpecification;
   std::optional<uint32_t> firstTForbit;

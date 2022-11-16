@@ -46,7 +46,7 @@ Response::MessageHeaderList DataEndpoint::newerMessages(const httplib::Request& 
 Stats DataEndpoint::getStats(const httplib::Request& input, httplib::Response& output) {
   StatsRequest request;
   STATS_STRING_PARAM(device, request)
-  STATS_STRING_PARAM(origin, request)
+  STATS_STRING_PARAM(messageOrigin, request)
   STATS_STRING_PARAM(description, request)
   STATS_NUMBER_PARAM(subSpecification, uint32_t, request)
   STATS_NUMBER_PARAM(firstTForbit, uint32_t, request)

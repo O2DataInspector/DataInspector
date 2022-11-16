@@ -333,8 +333,8 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
 
   if(request.device.has_value())
     BSON_APPEND_UTF8(match, "sender", request.device.value().c_str());
-  if(request.origin.has_value())
-    BSON_APPEND_UTF8(match, "origin", request.origin.value().c_str());
+  if(request.messageOrigin.has_value())
+    BSON_APPEND_UTF8(match, "origin", request.messageOrigin.value().c_str());
   if(request.description.has_value())
     BSON_APPEND_UTF8(match, "description", request.description.value().c_str());
 
