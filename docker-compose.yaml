@@ -22,18 +22,19 @@ services:
       MONGO_PASSWORD: example
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
-      ANALYSES_PATH: /di/analyses
+      ANALYSES_PATH: /di/alice/ANALYSES
       WORK_DIR: /di/alice/sw/
       ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
-      O2_VERSION: O2/latest-DataInspector-o2/
+      DI_DATASETS: /di/datasets
     volumes:
       - type: bind
         source: /home/arczipt/alice
         target: /di/alice
+      - type: bind
+        source: /home/arczipt/DATASETS
+        target: /di/datasets
         read_only: true
       - type: volume
         target: /di/runs
-      - type: volume
-        target: /di/analyses
     depends_on:
       - mongo
