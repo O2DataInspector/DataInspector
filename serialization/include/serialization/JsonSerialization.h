@@ -9,6 +9,7 @@
 #include "api/response/DeviceList.h"
 #include "api/response/MessageList.h"
 #include "api/response/MessageHeaderList.h"
+#include "domain/DIMessages.h"
 
 template <typename T>
 rapidjson::Document toJson(const T& t);

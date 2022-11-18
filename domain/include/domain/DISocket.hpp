@@ -13,6 +13,7 @@
 #include <sstream>
 #include <array>
 #include <iostream>
+#include <rapidjson/document.h>
 
 #define ASIO_CATCH(customMessage) catch(boost::system::system_error& err){ auto msg = std::string{err.what()}; auto code = std::to_string(err.code().value()); throw std::runtime_error{"Exception in DataInspector (boost_code=" + code + ", boost_msg=" + msg + ") - " + customMessage}; }
 
@@ -22,64 +23,6 @@ struct always_static_assert : std::false_type {
 
 template <typename... T>
 inline constexpr bool always_static_assert_v = always_static_assert<T...>::value;
-
-//Base case called by all overloads when needed. Derives from false_type.
-template <typename Type, typename Archive = boost::archive::binary_oarchive, typename = std::void_t<>>
-struct is_boost_serializable_base : std::false_type {
-};
-
-//Check if provided type implements a boost serialize method directly
-template <class Type, typename Archive>
-struct is_boost_serializable_base<Type, Archive,
-                                  std::void_t<decltype(std::declval<Type&>().serialize(std::declval<Archive&>(), 0))>>
-  : std::true_type {
-};
-
-//Base implementation to provided recurrence. Wraps around base templates
-template <class Type, typename Archive = boost::archive::binary_oarchive, typename = std::void_t<>>
-struct is_boost_serializable
-  : is_boost_serializable_base<Type, Archive> {
-};
-
-//Call base implementation in contained class/type if possible
-template <class Type, typename Archive>
-struct is_boost_serializable<Type, Archive, std::void_t<typename Type::value_type>>
-  : is_boost_serializable<typename Type::value_type, Archive> {
-};
-
-//Call base implementation in contained class/type if possible. Added default archive type for convenience
-template <class Type>
-struct is_boost_serializable<Type, boost::archive::binary_oarchive, std::void_t<typename Type::value_type>>
-  : is_boost_serializable<typename Type::value_type, boost::archive::binary_oarchive> {
-};
-
-template <typename T>
-std::tuple<char*, uint64_t> boostSerialize(const T& obj)
-{
-  std::ostringstream buffer;
-  boost::archive::binary_oarchive outputArchive(buffer);
-  outputArchive << obj;
-
-  auto str = buffer.str();
-  auto size = str.length();
-
-  char* serialized = new char[size];
-  std::memcpy(serialized, str.c_str(), size);
-
-  return {serialized, size};
-}
-
-template <typename T>
-T boostDeserialize(char* payload, uint64_t size)
-{
-  T t{};
-
-  std::istringstream buffer({payload, size});
-  boost::archive::binary_iarchive inputArchive(buffer);
-  inputArchive >> t;
-
-  return t;
-}
 
 struct DIMessage {
   struct __attribute__ ((packed)) Header {
@@ -123,10 +66,6 @@ struct DIMessage {
       payload = boost::endian::native_to_little(payload);
       this->payload = new char[payloadSize];
       std::memcpy(this->payload, &payload, payloadSize);
-    } else if constexpr (is_boost_serializable<T>::value) {
-      auto [serialized, size] = boostSerialize(payload);
-      payloadSize = size;
-      this->payload = serialized;
     } else {
       static_assert(always_static_assert_v<T>, "DISocket: Cannot create message of this type.");
     }
@@ -184,8 +123,10 @@ struct DIMessage {
       return std::string{payload, header.payloadSize()};
     } else if constexpr (std::is_integral_v<T>) {
       return boost::endian::little_to_native(*((T*) payload));
-    } else if constexpr (is_boost_serializable<T>::value) {
-      return boostDeserialize<T>(payload, header.payloadSize());
+    } else if constexpr (std::is_same_v<rapidjson::Document, T>) {
+      rapidjson::Document doc;
+      doc.Parse(payload, header.payloadSize());
+      return doc;
     } else {
       static_assert(always_static_assert_v<T>, "DISocket: Cannot create object of this type.");
     }

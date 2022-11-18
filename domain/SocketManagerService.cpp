@@ -80,6 +80,147 @@ std::function<void(DIMessage)> SocketManagerService::receiveCallback(DISocket* d
   };
 }
 
+template <typename T>
+T fromJson(const rapidjson::Document& doc);
+
+template <>
+DIMessages::RegisterDevice::Specs::Input fromJson(const rapidjson::Document& doc) {
+  DIMessages::RegisterDevice::Specs::Input msg;
+
+  auto& bindingValue = doc.FindMember("binding")->value;
+  msg.binding = std::string{bindingValue.GetString(), bindingValue.GetStringLength()};
+
+  auto& sourceChannelValue = doc.FindMember("sourceChannel")->value;
+  msg.sourceChannel = std::string{sourceChannelValue.GetString(), sourceChannelValue.GetStringLength()};
+
+  msg.timeslice = doc.FindMember("timeslice")->value.GetUint64();
+
+  if(doc.HasMember("origin")) {
+    auto& originValue = doc.FindMember("origin")->value;
+    msg.origin = std::string{originValue.GetString(), originValue.GetStringLength()};
+  }
+
+  if(doc.HasMember("description")) {
+    auto& descriptionValue = doc.FindMember("description")->value;
+    msg.description = std::string{descriptionValue.GetString(), descriptionValue.GetStringLength()};
+  }
+
+  if(doc.HasMember("subSpec")) {
+    msg.subSpec = doc.FindMember("subSpec")->value.GetUint();
+  }
+
+  return msg;
+}
+
+template <>
+DIMessages::RegisterDevice::Specs::Output fromJson(const rapidjson::Document& doc) {
+  DIMessages::RegisterDevice::Specs::Output msg;
+
+  auto& bindingValue = doc.FindMember("binding")->value;
+  msg.binding = std::string{bindingValue.GetString(), bindingValue.GetStringLength()};
+
+  auto& channelValue = doc.FindMember("channel")->value;
+  msg.channel = std::string{channelValue.GetString(), channelValue.GetStringLength()};
+
+  msg.timeslice = doc.FindMember("timeslice")->value.GetUint64();
+  msg.maxTimeslices = doc.FindMember("maxTimeslices")->value.GetUint64();
+
+  auto& originValue = doc.FindMember("origin")->value;
+  msg.origin = std::string{originValue.GetString(), originValue.GetStringLength()};
+
+  auto& descriptionValue = doc.FindMember("description")->value;
+  msg.description = std::string{descriptionValue.GetString(), descriptionValue.GetStringLength()};
+
+  if(doc.HasMember("subSpec")) {
+    msg.subSpec = doc.FindMember("subSpec")->value.GetUint();
+  }
+
+  return msg;
+}
+
+template <>
+DIMessages::RegisterDevice::Specs::Forward fromJson(const rapidjson::Document& doc) {
+  DIMessages::RegisterDevice::Specs::Forward msg;
+
+  auto& bindingValue = doc.FindMember("binding")->value;
+  msg.binding = std::string{bindingValue.GetString(), bindingValue.GetStringLength()};
+
+  auto& channelValue = doc.FindMember("channel")->value;
+  msg.channel = std::string{channelValue.GetString(), channelValue.GetStringLength()};
+
+  msg.timeslice = doc.FindMember("timeslice")->value.GetUint64();
+  msg.maxTimeslices = doc.FindMember("maxTimeslices")->value.GetUint64();
+
+  if(doc.HasMember("origin")) {
+    auto& originValue = doc.FindMember("origin")->value;
+    msg.origin = std::string{originValue.GetString(), originValue.GetStringLength()};
+  }
+
+  if(doc.HasMember("description")) {
+    auto& descriptionValue = doc.FindMember("description")->value;
+    msg.description = std::string{descriptionValue.GetString(), descriptionValue.GetStringLength()};
+  }
+
+  if(doc.HasMember("subSpec")) {
+    msg.subSpec = doc.FindMember("subSpec")->value.GetUint();
+  }
+
+  return msg;
+}
+
+template <>
+DIMessages::RegisterDevice::Specs fromJson(const rapidjson::Document& doc) {
+  DIMessages::RegisterDevice::Specs msg;
+
+  msg.rank = doc.FindMember("rank")->value.GetUint64();
+  msg.nSlots = doc.FindMember("nSlots")->value.GetUint64();
+  msg.inputTimesliceId = doc.FindMember("inputTimesliceId")->value.GetUint64();
+  msg.maxInputTimeslices = doc.FindMember("maxInputTimeslices")->value.GetUint64();
+
+  msg.inputs = std::vector<DIMessages::RegisterDevice::Specs::Input>{};
+  auto& inputsValue = doc.FindMember("inputs")->value;
+  for(auto& inputValue : inputsValue.GetArray()) {
+    rapidjson::Document inputDoc;
+    inputDoc.CopyFrom(inputValue, inputDoc.GetAllocator());
+    msg.inputs.push_back(fromJson<DIMessages::RegisterDevice::Specs::Input>(inputDoc));
+  }
+
+  msg.outputs = std::vector<DIMessages::RegisterDevice::Specs::Output>{};
+  auto& outputsValue = doc.FindMember("outputs")->value;
+  for(auto& outputValue : outputsValue.GetArray()) {
+    rapidjson::Document outputDoc;
+    outputDoc.CopyFrom(outputValue, outputDoc.GetAllocator());
+    msg.outputs.push_back(fromJson<DIMessages::RegisterDevice::Specs::Output>(outputDoc));
+  }
+
+  msg.forwards = std::vector<DIMessages::RegisterDevice::Specs::Forward>{};
+  auto& forwardsValue = doc.FindMember("forwards")->value;
+  for(auto& forwardValue : forwardsValue.GetArray()) {
+    rapidjson::Document forwardDoc;
+    forwardDoc.CopyFrom(forwardValue, forwardDoc.GetAllocator());
+    msg.forwards.push_back(fromJson<DIMessages::RegisterDevice::Specs::Forward>(forwardDoc));
+  }
+
+  return msg;
+}
+
+template <>
+DIMessages::RegisterDevice fromJson(const rapidjson::Document& doc) {
+  DIMessages::RegisterDevice msg;
+
+  auto& nameValue = doc.FindMember("name")->value;
+  msg.name = std::string{nameValue.GetString(), nameValue.GetStringLength()};
+
+  auto& runIdValue = doc.FindMember("runId")->value;
+  msg.runId = std::string{runIdValue.GetString(), runIdValue.GetStringLength()};
+
+  rapidjson::Document specsDoc;
+  specsDoc.CopyFrom(doc.FindMember("specs")->value, specsDoc.GetAllocator());
+  msg.specs = fromJson<DIMessages::RegisterDevice::Specs>(specsDoc);
+
+  return msg;
+}
+
 void SocketManagerService::acceptNext() {
   acceptor.async_accept([this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
     if(ec.failed()) {
@@ -97,7 +238,7 @@ void SocketManagerService::acceptNext() {
         return;
       }
 
-      auto registerDeviceMsg = initMsg.get<DIMessages::RegisterDevice>();
+      auto registerDeviceMsg = fromJson<DIMessages::RegisterDevice>(initMsg.get<rapidjson::Document>());
       std::cout << registerDeviceMsg.name << " IS ACTIVE (runId=" << registerDeviceMsg.runId << ")" << std::endl;
 
       auto device = toDomain(registerDeviceMsg);
