@@ -4,14 +4,24 @@ GITHUB_URL="$1"
 BRANCH="$2"
 ANALYSIS_ID="$3"
 
-cd "$O2PHYSICS_PATH" || exit
+cd "$ANALYSES_PATH" || exit
+mkdir "$ANALYSIS_ID"
+cd "$ANALYSIS_ID" || exit
 
-REMOTE_NAME="source-$ANALYSIS_ID"
-BRANCH_NAME="build-$ANALYSIS_ID"
+BRANCH_NAME="analysis-$ANALYSIS_ID"
 
-git remote add "$REMOTE_NAME" "$GITHUB_URL"
-git fetch "$REMOTE_NAME"
-git checkout -b "$BRANCH_NAME" "$REMOTE_NAME/$BRANCH"
-
+aliBuild init O2 --defaults o2
+cd O2 || exit
+git remote add origin "https://github.com/O2DataInspector/AliceO2.git"
+git fetch
+git checkout data-inspector-cleaned
 cd ../
-aliBuild build O2Physics --defaults o2
+aliBuild build O2 --defaults o2 --docker
+
+aliBuild init O2Physics --defaults o2
+cd O2Physics || exit
+git remote add origin "$GITHUB_URL"
+git fetch
+git checkout -b "$BRANCH_NAME" "$BRANCH"
+cd ../
+aliBuild build O2Physics --defaults o2 --docker

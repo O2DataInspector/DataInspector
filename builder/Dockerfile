@@ -65,3 +65,7 @@ WORKDIR /app/cpp-httplib-0.11.2/build
 RUN cmake .. -DCMAKE_BUILD_TYPE=Debug
 RUN cmake --build . --target install -j8
 
+RUN apt install -y curl libcurl4-gnutls-dev build-essential gfortran libmysqlclient-dev xorg-dev libglu1-mesa-dev libfftw3-dev libxml2-dev git unzip autoconf automake autopoint texinfo gettext libtool libtool-bin pkg-config bison flex libperl-dev libbz2-dev swig liblzma-dev libnanomsg-dev rsync lsb-release environment-modules libglfw3-dev libtbb-dev python3-dev python3-venv python3-pip graphviz libncurses-dev software-properties-common gtk-doc-tools
+RUN add-apt-repository ppa:alisw/ppa
+RUN apt update
+RUN apt install -y python3-alibuild
