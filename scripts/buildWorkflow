@@ -10,18 +10,17 @@ cd "$ANALYSIS_ID" || exit
 
 BRANCH_NAME="analysis-$ANALYSIS_ID"
 
-aliBuild init O2 --defaults o2
+aliBuild init O2 --defaults o2 -w "$WORK_DIR" -c "$ALI_DIR/alidist"
 cd O2 || exit
 git remote add origin "https://github.com/O2DataInspector/AliceO2.git"
 git fetch
 git checkout data-inspector-cleaned
 cd ../
-aliBuild build O2 --defaults o2 --docker
 
-aliBuild init O2Physics --defaults o2
+aliBuild init O2Physics --defaults o2 -w "$WORK_DIR" -c "$ALI_DIR/alidist"
 cd O2Physics || exit
 git remote add origin "$GITHUB_URL"
 git fetch
-git checkout -b "$BRANCH_NAME" "$BRANCH"
+git checkout -b "$BRANCH_NAME" "remotes/origin/$BRANCH"
 cd ../
-aliBuild build O2Physics --defaults o2 --docker
+aliBuild build O2Physics --defaults o2 -w "$WORK_DIR" -c "$ALI_DIR/alidist"

@@ -4,6 +4,8 @@ services:
   mongo:
     image: mongo
     restart: always
+    ports:
+      - "27017:27017"
     volumes:
       - type: volume
         target: /data/db
@@ -18,8 +20,6 @@ services:
       - "8081:8081"
       - "8082:8082"
     environment:
-      MONGO_USERNAME: root
-      MONGO_PASSWORD: example
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
       ANALYSES_PATH: /di/alice/ANALYSES

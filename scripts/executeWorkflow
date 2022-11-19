@@ -12,4 +12,4 @@ source "$BUILD_PATH/etc/profile.d/init.sh"
 PROG="$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH/$RUN_ID"
 cd "$RUNS_PATH/$RUN_ID" || exit
-$PROG "$CONFIG" --batch --inspector --inspector-id "$RUN_ID" --aod-file "$DI_DATASETS/$DATASET"
+$PROG --inspector --batch --inspector-id "$RUN_ID" --aod-file "$DI_DATASETS/$DATASET" "$CONFIG"
