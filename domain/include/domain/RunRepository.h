@@ -11,7 +11,7 @@ public:
   virtual std::string save(const Run& run) = 0;
   virtual Run get(const std::string& runId) = 0;
   virtual std::vector<Run> listRuns() = 0;
-  virtual void finish(const std::string& runId) = 0;
+  virtual void updateStatus(const std::string& runId, Run::Status status) = 0;
 };
 
 #endif //DIPROXY_RUNREPOSITORY_H

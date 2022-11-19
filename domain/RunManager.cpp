@@ -22,7 +22,10 @@ void RunManager::start(const Run& run, const Analysis& analysis, const std::stri
           boost::process::on_exit([this, run](int e, std::error_code ec) {
             std::cout << "RUN FINISHED" << std::endl;
             remove(run.id);
-            runRepository.finish(run.id);
+            if(e == 0)
+              runRepository.updateStatus(run.id, Run::Status::FINISHED);
+            else
+              runRepository.updateStatus(run.id, Run::Status::FAILED);
           }));
 
   processesMutex.lock();
@@ -40,6 +43,7 @@ void RunManager::remove(const std::string &runId) {
 
 void RunManager::stop(const std::string& runId) {
   processesMutex.lock();
+  runRepository.updateStatus(runId, Run::Status::FINISHED);
   devicesRepository.terminate(runId);
   processesMutex.unlock();
 }

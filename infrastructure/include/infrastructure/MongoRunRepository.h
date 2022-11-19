@@ -13,7 +13,7 @@ public:
   std::string save(const Run& run) override;
   Run get(const std::string& runId) override;
   std::vector<Run> listRuns() override;
-  void finish(const std::string& runId) override;
+  void updateStatus(const std::string& runId, Run::Status status) override;
 
 private:
   mongoc_client_pool_t* pool;

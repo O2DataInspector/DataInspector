@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
   AnalysesService analysesService{analysisRepository};
-  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
+  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository, runRepository};
   socketManagerService.start();
 
   /// API

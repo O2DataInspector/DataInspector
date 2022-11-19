@@ -1,5 +1,29 @@
 #include "api/RunsEndpoint.h"
 
+std::string toString(Run::Status status) {
+  std::string value;
+  switch (status) {
+    case Run::Status::STARTING: {
+      value = "STARTING";
+      break;
+    }
+    case Run::Status::RUNNING: {
+      value = "RUNNING";
+      break;
+    }
+    case Run::Status::FINISHED: {
+      value = "FINISHED";
+      break;
+    }
+    case Run::Status::FAILED: {
+      value = "FAILED";
+      break;
+    }
+  }
+
+  return value;
+}
+
 Response::RunsList RunsEndpoint::listRuns(const httplib::Request& input, httplib::Response& output) {
   auto pairs = runsService.listRuns();
 
@@ -8,7 +32,7 @@ Response::RunsList RunsEndpoint::listRuns(const httplib::Request& input, httplib
     auto& run = std::get<Run>(pair);
     auto& analysis = std::get<Analysis>(pair);
 
-    return {run.id, run.config, run.workflow, {analysis.id, analysis.url, analysis.name, analysis.branch}};
+    return {run.id, toString(run.status), run.config, run.workflow, {analysis.id, analysis.url, analysis.name, analysis.branch}};
   });
 
   return {runs};

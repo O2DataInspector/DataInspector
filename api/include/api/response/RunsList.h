@@ -15,6 +15,7 @@ struct RunsList {
 
   struct Run {
     std::string id;
+    std::string status;
     std::string config;
     std::string workflow;
     Analysis analysis;

@@ -2,12 +2,22 @@
 #include <iostream>
 #include "domain/DIMessages.h"
 #include "domain/Mappers.h"
+#include "domain/model/Run.h"
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-SocketManagerService::SocketManagerService(int port, int threads, MessageRepository& messageRepository, DevicesRepository& devicesRepository): ioContext(), acceptor(ioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
-                                                                                                                                               threadPool(threads), devicesRepository(devicesRepository), messageRepository(messageRepository) {
+SocketManagerService::SocketManagerService(int port,
+                                           int threads,
+                                           MessageRepository& messageRepository,
+                                           DevicesRepository& devicesRepository,
+                                           RunRepository& runRepository)
+                                           : ioContext(),
+                                             acceptor(ioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
+                                             threadPool(threads),
+                                             devicesRepository(devicesRepository),
+                                             messageRepository(messageRepository),
+                                             runRepository(runRepository) {
   acceptNext();
 }
 
@@ -240,6 +250,8 @@ void SocketManagerService::acceptNext() {
 
       auto registerDeviceMsg = fromJson<DIMessages::RegisterDevice>(initMsg.get<rapidjson::Document>());
       std::cout << registerDeviceMsg.name << " IS ACTIVE (runId=" << registerDeviceMsg.runId << ")" << std::endl;
+
+      runRepository.updateStatus(registerDeviceMsg.runId, Run::Status::RUNNING);
 
       auto device = toDomain(registerDeviceMsg);
       devicesRepository.addDevice(device, diSocket);

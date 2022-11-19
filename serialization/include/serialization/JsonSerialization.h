@@ -401,6 +401,7 @@ rapidjson::Document toJson<Response::RunsList::Run>(const Response::RunsList::Ru
   doc.AddMember("config", rapidjson::Value(run.config.c_str(), alloc), alloc);
   doc.AddMember("id", rapidjson::Value(run.id.c_str(), alloc), alloc);
   doc.AddMember("workflow", rapidjson::Value(run.workflow.c_str(), alloc), alloc);
+  doc.AddMember("status", rapidjson::Value(run.status.c_str(), alloc), alloc);
 
   rapidjson::Value analysisValue;
   analysisValue.CopyFrom(toJson(run.analysis), alloc);

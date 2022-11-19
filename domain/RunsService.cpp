@@ -24,7 +24,7 @@ std::vector<std::string> RunsService::listDatasets() {
 }
 
 std::string RunsService::start(const std::string& analysisId, const std::string& workflow, const std::string& config, const std::string& dataset) {
-  Run run{"", analysisId, workflow, config};
+  Run run{"", Run::Status::STARTING, analysisId, workflow, config};
   run.id = runRepository.save(run);
   auto analysis = analysisRepository.get(analysisId);
 

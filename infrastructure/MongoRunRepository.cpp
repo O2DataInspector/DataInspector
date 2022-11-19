@@ -19,7 +19,7 @@ std::string MongoRunRepository::save(const Run& run) {
   BSON_APPEND_UTF8(doc, "analysisId", run.analysisId.c_str());
   BSON_APPEND_UTF8(doc, "workflow", run.workflow.c_str());
   BSON_APPEND_UTF8(doc, "config", run.config.c_str());
-  BSON_APPEND_UTF8(doc, "status", "ACTIVE"); //TODO
+  BSON_APPEND_INT32(doc, "status", static_cast<int32_t>(run.status));
   if(!mongoc_collection_insert_one(
           collection, doc, NULL, NULL, &error))
   {
@@ -66,6 +66,9 @@ Run MongoRunRepository::get(const std::string& runId) {
 
     bson_iter_init_find(&iter, doc, "config");
     run.config = bson_iter_utf8(&iter, NULL);
+
+    bson_iter_init_find(&iter, doc, "status");
+    run.status = static_cast<Run::Status>(bson_iter_int32(&iter));
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);
@@ -87,7 +90,6 @@ std::vector<Run> MongoRunRepository::listRuns() {
   collection = mongoc_client_get_collection(client, "diProxy", "runs");
 
   query = bson_new();
-  BSON_APPEND_UTF8(query, "status", "ACTIVE");
   cursor = mongoc_collection_find_with_opts(
           collection, query, NULL, NULL);
 
@@ -105,6 +107,9 @@ std::vector<Run> MongoRunRepository::listRuns() {
     bson_iter_init_find(&iter, doc, "config");
     run.config = bson_iter_utf8(&iter, NULL);
 
+    bson_iter_init_find(&iter, doc, "status");
+    run.status = static_cast<Run::Status>(bson_iter_int32(&iter));
+
     bson_iter_init_find(&iter, doc, "_id");
     oid = bson_iter_oid(&iter);
     bson_oid_to_string(oid, str_oid);
@@ -120,7 +125,7 @@ std::vector<Run> MongoRunRepository::listRuns() {
   return runs;
 }
 
-void MongoRunRepository::finish(const std::string& runId) {
+void MongoRunRepository::updateStatus(const std::string& runId, Run::Status status) {
   bson_oid_t oid;
   bson_error_t error;
   bson_t *query;
@@ -137,7 +142,7 @@ void MongoRunRepository::finish(const std::string& runId) {
   update = BCON_NEW("$set",
                     "{",
                     "status",
-                    BCON_UTF8("FINISHED"),
+                    BCON_INT32(static_cast<int32_t>(status)),
                     "}"
   );
 
