@@ -1,4 +1,4 @@
-#include "domain/AnalysesDetector.h"
+#include "domain/BuildDetector.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 
@@ -14,7 +14,7 @@
  *   - branch
  *   - path to build
  */
-void AnalysesDetector::detectAnalyses() {
+void BuildDetector::detectBuilds() {
   auto detect = [this](const boost::filesystem::path& path) {
     std::cout << path << std::endl;
 
@@ -33,12 +33,12 @@ void AnalysesDetector::detectAnalyses() {
     file.close();
 
     std::cout << "[O2Physcis] Detected - " << path.filename() << "(name=" << name << ", url=" << url << ", branch=" << branch << ", path=" << buildPath << ")" << std::endl;
-    if(analysisRepository.getByName(name).has_value()) {
+    if(buildRepository.getByName(name).has_value()) {
       std::cout << "Already present" << std::endl;
       return;
     }
 
-    analysisRepository.save(Analysis{"", name, url, branch, buildPath});
+    buildRepository.save(Build{"", name, url, branch, buildPath});
   };
 
   boost::filesystem::recursive_directory_iterator it(basePath), end;

@@ -6,24 +6,24 @@
 
 #include "api/DataEndpoint.h"
 #include "api/DevicesEndpoint.h"
-#include "api/AnalysesEndpoint.h"
+#include "api/BuildsEndpoint.h"
 #include "api/RunsEndpoint.h"
 
 #include "domain/MessageService.h"
 #include "domain/DevicesService.h"
 #include "domain/SocketManagerService.h"
-#include "domain/AnalysesService.h"
+#include "domain/BuildService.h"
 #include "domain/RunManager.h"
 #include "domain/RunsService.h"
 
 #include "infrastructure/MongoMessageRepository.h"
 #include "infrastructure/InMemoryDevicesRepository.h"
-#include "infrastructure/MongoAnalysisRepository.h"
+#include "infrastructure/MongoBuildRepository.h"
 #include "infrastructure/MongoRunRepository.h"
 
 #include "HTTPUtil.h"
 #include "mongoc.h"
-#include "domain/AnalysesDetector.h"
+#include "domain/BuildDetector.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -31,8 +31,8 @@ constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
 
-constexpr char LIST_ANALYSES_ENDPOINT[]     = "/analyses";
-constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analyses/workflows";
+constexpr char LIST_ANALYSES_ENDPOINT[]     = "/builds";
+constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/builds/workflows";
 
 constexpr char START_RUN_ENDPOINT[]         = "/runs";
 constexpr char STOP_RUN_ENDPOINT[]          = "/runs/stop";
@@ -61,22 +61,22 @@ int main(int argc, char* argv[]) {
   /// INFRASTRUCTURE
   MongoMessageRepository messageRepository{pool};
   InMemoryDevicesRepository devicesRepository;
-  MongoAnalysisRepository analysisRepository{pool};
+  MongoBuildRepository buildRepository{pool};
   MongoRunRepository runRepository{pool};
 
   /// SERVICES
   RunManager runManager{executeScriptPath, devicesRepository, runRepository};
-  RunsService runsService{runManager, runRepository, analysisRepository};
+  RunsService runsService{runManager, runRepository, buildRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
-  AnalysesService analysesService{analysisRepository};
+  BuildService analysesService{buildRepository};
   SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository, runRepository};
   socketManagerService.start();
 
   /// API
   DataEndpoint dataEndpoint{messageService};
   DevicesEndpoint devicesEndpoint{devicesService};
-  AnalysesEndpoint analysesEndpoint{analysesService};
+  BuildsEndpoint analysesEndpoint{analysesService};
   RunsEndpoint runsEndpoint{runsService};
 
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
   addEndpoint<void>(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
 
   /// ANALYSIS
-  addEndpoint<Response::AnalysisList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getAnalyses));
+  addEndpoint<Response::BuildList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getAnalyses));
   addEndpoint<Response::WorkflowList>(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, listWorkflows));
 
 
@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
           });
 
 
-  AnalysesDetector o2PhysicsDetector{analysisRepository, std::getenv("ANALYSES_PATH")};
-  o2PhysicsDetector.detectAnalyses();
+  BuildDetector o2PhysicsDetector{buildRepository, std::getenv("BUILDS_PATH")};
+  o2PhysicsDetector.detectBuilds();
 
   /**
    * RUN

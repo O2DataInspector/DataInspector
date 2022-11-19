@@ -1,10 +1,10 @@
-#ifndef DIPROXY_ANALYSIS_H
-#define DIPROXY_ANALYSIS_H
+#ifndef DIPROXY_BUILD_H
+#define DIPROXY_BUILD_H
 
 #include <string>
 #include <vector>
 
-struct Analysis {
+struct Build {
   std::string id;
   std::string name;
   std::string url;
@@ -12,4 +12,4 @@ struct Analysis {
   std::string path;
 };
 
-#endif //DIPROXY_ANALYSIS_H
+#endif //DIPROXY_BUILD_H

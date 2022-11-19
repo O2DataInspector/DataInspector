@@ -1,7 +1,7 @@
-#include "infrastructure/MongoAnalysisRepository.h"
+#include "infrastructure/MongoBuildRepository.h"
 #include <stdexcept>
 
-std::string MongoAnalysisRepository::save(const Analysis& analysis) {
+std::string MongoBuildRepository::save(const Build& build) {
   bson_t *doc;
   bson_oid_t oid;
   bson_error_t error;
@@ -16,10 +16,10 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   bson_oid_init(&oid, NULL);
   BSON_APPEND_OID(doc, "_id", &oid);
 
-  BSON_APPEND_UTF8(doc, "url", analysis.url.c_str());
-  BSON_APPEND_UTF8(doc, "name", analysis.name.c_str());
-  BSON_APPEND_UTF8(doc, "branch", analysis.branch.c_str());
-  BSON_APPEND_UTF8(doc, "path", analysis.path.c_str());
+  BSON_APPEND_UTF8(doc, "url", build.url.c_str());
+  BSON_APPEND_UTF8(doc, "name", build.name.c_str());
+  BSON_APPEND_UTF8(doc, "branch", build.branch.c_str());
+  BSON_APPEND_UTF8(doc, "path", build.path.c_str());
   if(!mongoc_collection_insert_one(
      collection, doc, NULL, NULL, &error))
   {
@@ -34,7 +34,7 @@ std::string MongoAnalysisRepository::save(const Analysis& analysis) {
   return id;
 }
 
-std::vector<Analysis> MongoAnalysisRepository::getAnalyses(int page, int count) {
+std::vector<Build> MongoBuildRepository::getAnalyses(int page, int count) {
   bson_iter_t iter;
   bson_t *query;
   const bson_t *doc;
@@ -59,29 +59,29 @@ std::vector<Analysis> MongoAnalysisRepository::getAnalyses(int page, int count) 
   BSON_APPEND_DOCUMENT(query, "2", limit);
   cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, query, NULL, NULL);
 
-  std::vector<Analysis> analyses;
+  std::vector<Build> analyses;
   char str_oid[25];
   while(mongoc_cursor_next(cursor, &doc))
   {
-    Analysis analysis;
+    Build build;
     bson_iter_init_find(&iter, doc, "_id");
     oid_ptr = bson_iter_oid(&iter);
     bson_oid_to_string(oid_ptr, str_oid);
-    analysis.id = str_oid;
+    build.id = str_oid;
 
     bson_iter_init_find(&iter, doc, "url");
-    analysis.url = bson_iter_utf8(&iter, NULL);
+    build.url = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "name");
-    analysis.name = bson_iter_utf8(&iter, NULL);
+    build.name = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "branch");
-    analysis.branch = bson_iter_utf8(&iter, NULL);
+    build.branch = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "path");
-    analysis.path = bson_iter_utf8(&iter, NULL);
+    build.path = bson_iter_utf8(&iter, NULL);
 
-    analyses.push_back(analysis);
+    analyses.push_back(build);
   }
   bson_destroy(match);
   bson_destroy(matchHeader);
@@ -95,7 +95,7 @@ std::vector<Analysis> MongoAnalysisRepository::getAnalyses(int page, int count) 
   return analyses;
 }
 
-Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
+Build MongoBuildRepository::get(const std::string& buildId) {
   bson_oid_t oid;
   bson_iter_t iter;
   bson_t *query;
@@ -103,13 +103,13 @@ Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
   mongoc_cursor_t *cursor;
   mongoc_client_t *client;
   mongoc_collection_t *collection;
-  struct Analysis analysis;
+  struct Build build;
 
   client = mongoc_client_pool_pop (pool);
   collection = mongoc_client_get_collection(client, "diProxy", "analyses");
   
   query = bson_new();
-  bson_oid_init_from_string(&oid, analysisId.c_str());
+  bson_oid_init_from_string(&oid, buildId.c_str());
   BSON_APPEND_OID(query, "_id", &oid);
 
   cursor = mongoc_collection_find_with_opts(
@@ -117,28 +117,28 @@ Analysis MongoAnalysisRepository::get(const std::string& analysisId) {
 
   while(mongoc_cursor_next(cursor, &doc))
   {
-    analysis.id = analysisId.c_str();
+    build.id = buildId.c_str();
 
     bson_iter_init_find(&iter, doc, "url");
-    analysis.url = bson_iter_utf8(&iter, NULL);
+    build.url = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "name");
-    analysis.name = bson_iter_utf8(&iter, NULL);
+    build.name = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "branch");
-    analysis.branch = bson_iter_utf8(&iter, NULL);
+    build.branch = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "path");
-    analysis.path = bson_iter_utf8(&iter, NULL);
+    build.path = bson_iter_utf8(&iter, NULL);
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);
   mongoc_collection_destroy(collection);
   mongoc_client_pool_push (pool, client);
-  return analysis;
+  return build;
 }
 
-std::optional<Analysis> MongoAnalysisRepository::getByName(const std::string& name) {
+std::optional<Build> MongoBuildRepository::getByName(const std::string& name) {
   const bson_oid_t* oid_ptr;
   bson_iter_t iter;
   bson_t *query;
@@ -147,7 +147,7 @@ std::optional<Analysis> MongoAnalysisRepository::getByName(const std::string& na
   mongoc_client_t *client;
   mongoc_collection_t *collection;
   char str_oid[25];
-  std::optional<Analysis> analysis;
+  std::optional<Build> build;
 
   client = mongoc_client_pool_pop (pool);
   collection = mongoc_client_get_collection(client, "diProxy", "analyses");
@@ -159,28 +159,28 @@ std::optional<Analysis> MongoAnalysisRepository::getByName(const std::string& na
 
   while(mongoc_cursor_next(cursor, &doc))
   {
-    analysis.emplace();
+    build.emplace();
 
     bson_iter_init_find(&iter, doc, "_id");
     oid_ptr = bson_iter_oid(&iter);
     bson_oid_to_string(oid_ptr, str_oid);
-    analysis.value().id = str_oid;
+    build.value().id = str_oid;
 
     bson_iter_init_find(&iter, doc, "url");
-    analysis.value().url = bson_iter_utf8(&iter, NULL);
+    build.value().url = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "name");
-    analysis.value().name = bson_iter_utf8(&iter, NULL);
+    build.value().name = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "branch");
-    analysis.value().branch = bson_iter_utf8(&iter, NULL);
+    build.value().branch = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "path");
-    analysis.value().path = bson_iter_utf8(&iter, NULL);
+    build.value().path = bson_iter_utf8(&iter, NULL);
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);
   mongoc_collection_destroy(collection);
   mongoc_client_pool_push (pool, client);
-  return analysis;
+  return build;
 }

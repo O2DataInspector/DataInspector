@@ -16,7 +16,7 @@ std::string MongoRunRepository::save(const Run& run) {
   bson_oid_init(&oid, NULL);
   BSON_APPEND_OID(doc, "_id", &oid);
 
-  BSON_APPEND_UTF8(doc, "analysisId", run.analysisId.c_str());
+  BSON_APPEND_UTF8(doc, "buildId", run.buildId.c_str());
   BSON_APPEND_UTF8(doc, "workflow", run.workflow.c_str());
   BSON_APPEND_UTF8(doc, "config", run.config.c_str());
   BSON_APPEND_INT32(doc, "status", static_cast<int32_t>(run.status));
@@ -58,8 +58,8 @@ Run MongoRunRepository::get(const std::string& runId) {
   {
     run.id = runId;
 
-    bson_iter_init_find(&iter, doc, "analysisId");
-    run.analysisId = bson_iter_utf8(&iter, NULL);
+    bson_iter_init_find(&iter, doc, "buildId");
+    run.buildId = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "workflow");
     run.workflow = bson_iter_utf8(&iter, NULL);
@@ -98,8 +98,8 @@ std::vector<Run> MongoRunRepository::listRuns() {
   while(mongoc_cursor_next(cursor, &doc))
   {
     Run run;
-    bson_iter_init_find(&iter, doc, "analysisId");
-    run.analysisId = bson_iter_utf8(&iter, NULL);
+    bson_iter_init_find(&iter, doc, "buildId");
+    run.buildId = bson_iter_utf8(&iter, NULL);
 
     bson_iter_init_find(&iter, doc, "workflow");
     run.workflow = bson_iter_utf8(&iter, NULL);

@@ -4,8 +4,8 @@
 #include <string>
 
 namespace Response {
-struct AnalysisId {
-  std::string analysisId;
+struct BuildId {
+  std::string buildId;
 };
 }
 

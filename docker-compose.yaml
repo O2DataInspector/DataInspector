@@ -22,7 +22,7 @@ services:
     environment:
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
-      ANALYSES_PATH: /di/analyses
+      BUILDS_PATH: /di/builds
       DI_DATASETS: /di/datasets
       WORK_DIR: /di/alice/sw/
       ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
@@ -32,8 +32,8 @@ services:
         target: /di/alice
         read_only: true
       - type: bind
-        source: /home/arczipt/ANALYSES_DOCKER
-        target: /di/analyses
+        source: /home/arczipt/BUILDS_DOCKER
+        target: /di/builds
         read_only: true
       - type: bind
         source: /home/arczipt/DATASETS

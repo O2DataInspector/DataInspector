@@ -3,7 +3,7 @@
 
 #include "domain/RunManager.h"
 #include "domain/RunRepository.h"
-#include "domain/AnalysisRepository.h"
+#include "domain/BuildRepository.h"
 
 #include <vector>
 #include <tuple>
@@ -12,21 +12,21 @@ class RunsService {
 public:
   RunsService(RunManager& runManager,
               RunRepository& runRepository,
-              AnalysisRepository& analysisRepository
+              BuildRepository& buildRepository
               ) : runManager(runManager),
                   runRepository(runRepository),
-                  analysisRepository(analysisRepository),
+                  buildRepository(buildRepository),
                   datasetsPath(std::getenv("DI_DATASETS")) {}
 
-  std::vector<std::tuple<Run, Analysis>> listRuns();
+  std::vector<std::tuple<Run, Build>> listRuns();
   std::vector<std::string> listDatasets();
-  std::string start(const std::string& analysisId, const std::string& workflow, const std::string& config, const std::string& dataset);
+  std::string start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::string& dataset);
   void stop(const std::string& runId);
 
 private:
   RunManager& runManager;
   RunRepository& runRepository;
-  AnalysisRepository& analysisRepository;
+  BuildRepository& buildRepository;
 
   std::string datasetsPath;
 };

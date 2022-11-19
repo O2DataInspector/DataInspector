@@ -2,15 +2,15 @@
 #define DIPROXY_ANALYSISLIST_H
 
 namespace Response {
-struct AnalysisList {
-  struct Analysis {
+struct BuildList {
+  struct Build {
     std::string id;
     std::string url;
     std::string name;
     std::string branch;
   };
 
-  std::vector<Analysis> analyses;
+  std::vector<Build> builds;
 };
 }
 

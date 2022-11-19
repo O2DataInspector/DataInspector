@@ -3,7 +3,7 @@
 
 #include "utils/ThreadPool.h"
 #include <string>
-#include "domain/model/Analysis.h"
+#include "domain/model/Build.h"
 #include "domain/model/Run.h"
 #include "domain/DevicesRepository.h"
 #include <boost/asio.hpp>
@@ -13,7 +13,7 @@
 class RunManager {
 public:
   RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
-  void start(const Run& run, const Analysis& analysis, const std::string& dataset);
+  void start(const Run& run, const Build& build, const std::string& dataset);
   void stop(const std::string& runId);
 
 private:

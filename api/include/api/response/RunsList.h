@@ -6,7 +6,7 @@
 
 namespace Response {
 struct RunsList {
-  struct Analysis {
+  struct Build {
     std::string id;
     std::string url;
     std::string name;
@@ -18,7 +18,7 @@ struct RunsList {
     std::string status;
     std::string config;
     std::string workflow;
-    Analysis analysis;
+    Build build;
   };
 
   std::vector<Run> runs;

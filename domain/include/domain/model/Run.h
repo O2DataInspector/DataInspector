@@ -13,7 +13,7 @@ struct Run {
 
   std::string id;
   Status status;
-  std::string analysisId;
+  std::string buildId;
   std::string workflow;
   std::string config;
 };

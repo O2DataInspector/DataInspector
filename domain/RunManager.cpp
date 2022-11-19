@@ -7,12 +7,12 @@ RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devices
   });
 }
 
-void RunManager::start(const Run& run, const Analysis& analysis, const std::string& dataset) {
+void RunManager::start(const Run& run, const Build& build, const std::string& dataset) {
   auto* process = new boost::process::child(
           boost::process::search_path("bash"),
           scriptPath,
           run.id,
-          analysis.path,
+          build.path,
           run.workflow,
           dataset,
           run.config,

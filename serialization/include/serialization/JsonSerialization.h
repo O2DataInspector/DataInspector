@@ -288,56 +288,38 @@ rapidjson::Document toJson<Stats>(const Stats& stats) {
 }
 
 template <>
-rapidjson::Document toJson<Response::AnalysisBuildStatus>(const Response::AnalysisBuildStatus& buildStatus) {
+rapidjson::Document toJson<Response::BuildId>(const Response::BuildId& buildId) {
   rapidjson::Document doc;
   doc.SetObject();
   auto& alloc = doc.GetAllocator();
 
-  doc.AddMember("buildStatus", rapidjson::Value(buildStatus.status.c_str(), alloc), alloc);
+  doc.AddMember("buildId", rapidjson::Value(buildId.buildId.c_str(), alloc), alloc);
+  return doc;
+}
 
-  rapidjson::Value listValue;
-  listValue.SetArray();
-  for(auto& log : buildStatus.logs) {
-    listValue.PushBack(rapidjson::Value(log.c_str(), alloc), alloc);
-  }
-  doc.AddMember("logs", listValue, alloc);
+template <>
+rapidjson::Document toJson<Response::BuildList::Build>(const Response::BuildList::Build& build) {
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& alloc = doc.GetAllocator();
+
+  doc.AddMember("name", rapidjson::Value(build.name.c_str(), alloc), alloc);
+  doc.AddMember("id", rapidjson::Value(build.id.c_str(), alloc), alloc);
+  doc.AddMember("url", rapidjson::Value(build.url.c_str(), alloc), alloc);
+  doc.AddMember("branch", rapidjson::Value(build.branch.c_str(), alloc), alloc);
 
   return doc;
 }
 
 template <>
-rapidjson::Document toJson<Response::AnalysisId>(const Response::AnalysisId& analysisId) {
-  rapidjson::Document doc;
-  doc.SetObject();
-  auto& alloc = doc.GetAllocator();
-
-  doc.AddMember("analysisId", rapidjson::Value(analysisId.analysisId.c_str(), alloc), alloc);
-  return doc;
-}
-
-template <>
-rapidjson::Document toJson<Response::AnalysisList::Analysis>(const Response::AnalysisList::Analysis& analysis) {
-  rapidjson::Document doc;
-  doc.SetObject();
-  auto& alloc = doc.GetAllocator();
-
-  doc.AddMember("name", rapidjson::Value(analysis.name.c_str(), alloc), alloc);
-  doc.AddMember("id", rapidjson::Value(analysis.id.c_str(), alloc), alloc);
-  doc.AddMember("url", rapidjson::Value(analysis.url.c_str(), alloc), alloc);
-  doc.AddMember("branch", rapidjson::Value(analysis.branch.c_str(), alloc), alloc);
-
-  return doc;
-}
-
-template <>
-rapidjson::Document toJson<Response::AnalysisList>(const Response::AnalysisList& analysisList) {
+rapidjson::Document toJson<Response::BuildList>(const Response::BuildList& buildList) {
   rapidjson::Document doc;
   doc.SetObject();
   auto& alloc = doc.GetAllocator();
 
   std::vector<rapidjson::Document> objDocs{};
-  std::transform(analysisList.analyses.begin(), analysisList.analyses.end(), std::back_inserter(objDocs), [](const Response::AnalysisList::Analysis& analysis) {
-    return toJson(analysis);
+  std::transform(buildList.builds.begin(), buildList.builds.end(), std::back_inserter(objDocs), [](const Response::BuildList::Build& build) {
+    return toJson(build);
   });
 
   rapidjson::Value listValue;
@@ -348,7 +330,7 @@ rapidjson::Document toJson<Response::AnalysisList>(const Response::AnalysisList&
     listValue.PushBack(objValue, alloc);
   }
 
-  doc.AddMember("analyses", listValue, alloc);
+  doc.AddMember("builds", listValue, alloc);
   return doc;
 }
 
@@ -379,15 +361,15 @@ rapidjson::Document toJson<Response::RunId>(const Response::RunId& runId) {
 }
 
 template <>
-rapidjson::Document toJson<Response::RunsList::Analysis>(const Response::RunsList::Analysis& analysis) {
+rapidjson::Document toJson<Response::RunsList::Build>(const Response::RunsList::Build& build) {
   rapidjson::Document doc;
   doc.SetObject();
   auto& alloc = doc.GetAllocator();
 
-  doc.AddMember("name", rapidjson::Value(analysis.name.c_str(), alloc), alloc);
-  doc.AddMember("id", rapidjson::Value(analysis.id.c_str(), alloc), alloc);
-  doc.AddMember("url", rapidjson::Value(analysis.url.c_str(), alloc), alloc);
-  doc.AddMember("branch", rapidjson::Value(analysis.branch.c_str(), alloc), alloc);
+  doc.AddMember("name", rapidjson::Value(build.name.c_str(), alloc), alloc);
+  doc.AddMember("id", rapidjson::Value(build.id.c_str(), alloc), alloc);
+  doc.AddMember("url", rapidjson::Value(build.url.c_str(), alloc), alloc);
+  doc.AddMember("branch", rapidjson::Value(build.branch.c_str(), alloc), alloc);
 
   return doc;
 }
@@ -403,9 +385,9 @@ rapidjson::Document toJson<Response::RunsList::Run>(const Response::RunsList::Ru
   doc.AddMember("workflow", rapidjson::Value(run.workflow.c_str(), alloc), alloc);
   doc.AddMember("status", rapidjson::Value(run.status.c_str(), alloc), alloc);
 
-  rapidjson::Value analysisValue;
-  analysisValue.CopyFrom(toJson(run.analysis), alloc);
-  doc.AddMember("analysis", analysisValue, alloc);
+  rapidjson::Value buildValue;
+  buildValue.CopyFrom(toJson(run.build), alloc);
+  doc.AddMember("build", buildValue, alloc);
 
   return doc;
 }

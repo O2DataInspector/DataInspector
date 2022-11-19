@@ -1,11 +1,11 @@
 #include "domain/RunsService.h"
 
-std::vector<std::tuple<Run, Analysis>> RunsService::listRuns() {
+std::vector<std::tuple<Run, Build>> RunsService::listRuns() {
   auto runs = runRepository.listRuns();
 
-  std::vector<std::tuple<Run, Analysis>> pairs;
-  std::transform(runs.begin(), runs.end(), std::back_inserter(pairs), [this](const Run& run) -> std::tuple<Run, Analysis>{
-    return {run, analysisRepository.get(run.analysisId)};
+  std::vector<std::tuple<Run, Build>> pairs;
+  std::transform(runs.begin(), runs.end(), std::back_inserter(pairs), [this](const Run& run) -> std::tuple<Run, Build>{
+    return {run, buildRepository.get(run.buildId)};
   });
 
   return pairs;
@@ -23,12 +23,12 @@ std::vector<std::string> RunsService::listDatasets() {
   return datasets;
 }
 
-std::string RunsService::start(const std::string& analysisId, const std::string& workflow, const std::string& config, const std::string& dataset) {
-  Run run{"", Run::Status::STARTING, analysisId, workflow, config};
+std::string RunsService::start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::string& dataset) {
+  Run run{"", Run::Status::STARTING, buildId, workflow, config};
   run.id = runRepository.save(run);
-  auto analysis = analysisRepository.get(analysisId);
+  auto build = buildRepository.get(buildId);
 
-  runManager.start(run, analysis, dataset);
+  runManager.start(run, build, dataset);
   return run.id;
 }
 
