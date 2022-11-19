@@ -1,11 +1,10 @@
 #!/bin/bash
 
 RUN_ID="$1"
-ANALYSIS_ID="$2"
+BUILD_PATH="$2"
 WORKFLOW="$3"
 DATASET="$4"
 CONFIG="$5"
-BUILD_PATH="$WORK_DIR/$ALIBUILD_ARCH_PREFIX/O2Physics/latest-analysis-$ANALYSIS_ID-o2"
 
 source "$BUILD_PATH/etc/profile.d/init.sh"
 

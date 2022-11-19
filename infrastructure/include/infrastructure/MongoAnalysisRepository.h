@@ -13,6 +13,7 @@ public:
   std::string save(const Analysis& analysis) override;
   std::vector<Analysis> getAnalyses(int page, int count) override;
   Analysis get(const std::string& analysisId) override;
+  std::optional<Analysis> getByName(const std::string& name) override;
 
 private:
   mongoc_client_pool_t* pool;

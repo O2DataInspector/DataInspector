@@ -7,9 +7,7 @@
 
 class AnalysesService {
 public:
-  AnalysesService(AnalysisRepository& analysisRepository):
-          analysisRepository(analysisRepository),
-          basePath(std::string{std::getenv("WORK_DIR")} + std::string{std::getenv("ALIBUILD_ARCH_PREFIX")} + "O2Physics/") {};
+  AnalysesService(AnalysisRepository& analysisRepository) : analysisRepository(analysisRepository) {};
 
   std::vector<Analysis> getAnalyses(int page, int count);
   Analysis get(const std::string& analysisId);
@@ -17,8 +15,6 @@ public:
 
 private:
   AnalysisRepository& analysisRepository;
-
-  std::string basePath;
 };
 
 #endif //DIPROXY_ANALYSISSERVICE_H

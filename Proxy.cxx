@@ -23,6 +23,7 @@
 
 #include "HTTPUtil.h"
 #include "mongoc.h"
+#include "domain/AnalysesDetector.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
@@ -125,6 +126,8 @@ int main(int argc, char* argv[]) {
           });
 
 
+  AnalysesDetector o2PhysicsDetector{analysisRepository, std::getenv("ANALYSES_PATH")};
+  o2PhysicsDetector.detectAnalyses();
 
   /**
    * RUN

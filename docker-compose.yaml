@@ -22,22 +22,24 @@ services:
     environment:
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
-      ANALYSES_PATH: /di/alice/ANALYSES
+      ANALYSES_PATH: /di/analyses
+      DI_DATASETS: /di/datasets
       WORK_DIR: /di/alice/sw/
       ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
-      DI_DATASETS: /di/datasets
     volumes:
       - type: bind
         source: /home/arczipt/alice
         target: /di/alice
+        read_only: true
+      - type: bind
+        source: /home/arczipt/ANALYSES_DOCKER
+        target: /di/analyses
+        read_only: true
       - type: bind
         source: /home/arczipt/DATASETS
         target: /di/datasets
         read_only: true
       - type: volume
         target: /di/runs
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
     depends_on:
       - mongo

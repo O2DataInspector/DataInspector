@@ -12,11 +12,13 @@ void RunManager::start(const Run& run, const Analysis& analysis, const std::stri
           boost::process::search_path("bash"),
           scriptPath,
           run.id,
-          analysis.id,
+          analysis.path,
           run.workflow,
           dataset,
           run.config,
           ioContext,
+          boost::process::std_out > "/dev/null",
+          boost::process::std_err > "/dev/null",
           boost::process::on_exit([this, run](int e, std::error_code ec) {
             std::cout << "RUN FINISHED" << std::endl;
             remove(run.id);
