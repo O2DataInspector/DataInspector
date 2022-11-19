@@ -13,7 +13,6 @@
 #include "domain/DevicesService.h"
 #include "domain/SocketManagerService.h"
 #include "domain/AnalysesService.h"
-#include "domain/BuildManager.h"
 #include "domain/RunManager.h"
 #include "domain/RunsService.h"
 
@@ -31,9 +30,7 @@ constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
 
-constexpr char IMPORT_ANALYSES_ENDPOINT[]   = "/analyses";
 constexpr char LIST_ANALYSES_ENDPOINT[]     = "/analyses";
-constexpr char ANALYSES_STATUS_ENDPOINT[]   = "/analyses/status";
 constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analyses/workflows";
 
 constexpr char START_RUN_ENDPOINT[]         = "/runs";
@@ -46,13 +43,12 @@ constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 constexpr char STATS_ENDPOINT[]             = "/stats";
 
 int main(int argc, char* argv[]) {
-  if(argc < 3) {
-    std::cout << "Usage: proxy <build-script> <execute-script>" << std::endl;
+  if(argc < 2) {
+    std::cout << "Usage: proxy <execute-script>" << std::endl;
     exit(1);
   }
 
-  auto buildScriptPath = argv[1];
-  auto executeScriptPath = argv[2];
+  auto executeScriptPath = argv[1];
 
   mongoc_init();
   auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
@@ -68,12 +64,11 @@ int main(int argc, char* argv[]) {
   MongoRunRepository runRepository{pool};
 
   /// SERVICES
-  BuildManager buildManager{buildScriptPath, analysisRepository};
   RunManager runManager{executeScriptPath, devicesRepository, runRepository};
   RunsService runsService{runManager, runRepository, analysisRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
-  AnalysesService analysesService{buildManager, analysisRepository};
+  AnalysesService analysesService{analysisRepository};
   SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
   socketManagerService.start();
 
@@ -101,9 +96,7 @@ int main(int argc, char* argv[]) {
   addEndpoint<void>(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
 
   /// ANALYSIS
-  addEndpoint<Response::AnalysisId>(handle, HTTPMethod::POST, IMPORT_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, importAnalysis));
   addEndpoint<Response::AnalysisList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getAnalyses));
-  addEndpoint<Response::AnalysisBuildStatus>(handle, HTTPMethod::GET, ANALYSES_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getBuildStatus));
   addEndpoint<Response::WorkflowList>(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, listWorkflows));
 
 

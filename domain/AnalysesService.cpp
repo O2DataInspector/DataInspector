@@ -1,13 +1,6 @@
 #include "domain/AnalysesService.h"
 #include <iostream>
 
-std::string AnalysesService::importAnalysis(const std::string& name, const std::string& url, const std::string& branch) {
-  auto analysisId = analysisRepository.save(Analysis{"", Analysis::BuildStatus::NOT_STARTED, {}, name, url, branch});
-  buildManager.build(analysisId, url, branch);
-
-  return analysisId;
-}
-
 std::vector<Analysis> AnalysesService::getAnalyses(int page, int count) {
   return analysisRepository.getAnalyses(page, count);
 }

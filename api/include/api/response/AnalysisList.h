@@ -5,7 +5,6 @@ namespace Response {
 struct AnalysisList {
   struct Analysis {
     std::string id;
-    std::string buildStatus;
     std::string url;
     std::string name;
     std::string branch;

@@ -14,7 +14,6 @@ public:
 
   Response::AnalysisId importAnalysis(const httplib::Request& input, httplib::Response& output);
   Response::AnalysisList getAnalyses(const httplib::Request& input, httplib::Response& output);
-  Response::AnalysisBuildStatus getBuildStatus(const httplib::Request& input, httplib::Response& output);
   Response::WorkflowList listWorkflows(const httplib::Request& input, httplib::Response& output);
 
 private:

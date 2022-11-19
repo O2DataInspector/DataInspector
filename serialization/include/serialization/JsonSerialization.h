@@ -321,7 +321,6 @@ rapidjson::Document toJson<Response::AnalysisList::Analysis>(const Response::Ana
   doc.SetObject();
   auto& alloc = doc.GetAllocator();
 
-  doc.AddMember("buildStatus", rapidjson::Value(analysis.buildStatus.c_str(), alloc), alloc);
   doc.AddMember("name", rapidjson::Value(analysis.name.c_str(), alloc), alloc);
   doc.AddMember("id", rapidjson::Value(analysis.id.c_str(), alloc), alloc);
   doc.AddMember("url", rapidjson::Value(analysis.url.c_str(), alloc), alloc);
