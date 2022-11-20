@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
   MongoRunRepository runRepository{pool};
 
   /// SERVICES
-  RunManager runManager{executeScriptPath, devicesRepository, runRepository};
+  RunManager runManager{executeScriptPath, std::getenv("DI_DATASETS"), devicesRepository, runRepository};
   RunsService runsService{runManager, runRepository, buildRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
           });
 
 
-  BuildDetector o2PhysicsDetector{buildRepository, std::getenv("BUILDS_PATH")};
-  o2PhysicsDetector.detectBuilds();
+  BuildDetector detector{buildRepository, std::getenv("BUILDS_PATH"), "O2Physics/O2"};
+  detector.detectBuilds();
 
   /**
    * RUN

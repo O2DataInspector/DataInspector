@@ -32,7 +32,7 @@ void BuildDetector::detectBuilds() {
     file >> url >> branch >> buildPath;
     file.close();
 
-    std::cout << "[O2Physcis] Detected - " << path.filename() << "(name=" << name << ", url=" << url << ", branch=" << branch << ", path=" << buildPath << ")" << std::endl;
+    std::cout << "[" + package + "] Detected - " << path.filename() << "(name=" << name << ", url=" << url << ", branch=" << branch << ", path=" << buildPath << ")" << std::endl;
     if(buildRepository.getByName(name).has_value()) {
       std::cout << "Already present" << std::endl;
       return;

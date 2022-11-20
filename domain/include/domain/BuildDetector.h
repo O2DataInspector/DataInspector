@@ -7,7 +7,7 @@
 
 class BuildDetector {
 public:
-  BuildDetector(BuildRepository& buildRepository, const std::string& basePath)
+  BuildDetector(BuildRepository& buildRepository, const std::string& basePath, const std::string& package)
     : buildRepository(buildRepository),
       basePath(basePath) {};
 
@@ -16,6 +16,7 @@ public:
 private:
   BuildRepository& buildRepository;
   const std::string basePath;
+  const std::string package;
 };
 
 #endif //DIPROXY_BUILDDETECTOR_H
