@@ -1,21 +1,24 @@
 #include "domain/RunManager.h"
 #include <iostream>
 
-RunManager::RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository): scriptPath(scriptPath), devicesRepository(devicesRepository), runRepository(runRepository), threadPool(1), ioContext(), work(ioContext) {
+RunManager::RunManager(const std::string& scriptPath, const std::string& datasetsPath, DevicesRepository& devicesRepository, RunRepository& runRepository): scriptPath(scriptPath), datasetsPath(datasetsPath), devicesRepository(devicesRepository), runRepository(runRepository), threadPool(1), ioContext(), work(ioContext) {
   threadPool.addJob([this]() {
     ioContext.run();
   });
 }
 
-void RunManager::start(const Run& run, const Build& build, const std::string& dataset) {
+void RunManager::start(const Run& run, const Build& build, const std::optional<std::string>& dataset) {
+  std::string config = run.config;
+  if(dataset.has_value())
+    config += " --aod-file " + datasetsPath + "/" + dataset.value();
+
   auto* process = new boost::process::child(
           boost::process::search_path("bash"),
           scriptPath,
           run.id,
           build.path,
           run.workflow,
-          dataset,
-          run.config,
+          config,
           ioContext,
           boost::process::std_out > "/dev/null",
           boost::process::std_err > "/dev/null",

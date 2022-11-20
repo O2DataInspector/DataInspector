@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <tuple>
+#include <optional>
 
 class RunsService {
 public:
@@ -20,7 +21,7 @@ public:
 
   std::vector<std::tuple<Run, Build>> listRuns();
   std::vector<std::string> listDatasets();
-  std::string start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::string& dataset);
+  std::string start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::optional<std::string>& dataset);
   void stop(const std::string& runId);
 
 private:

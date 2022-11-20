@@ -3,12 +3,11 @@
 RUN_ID="$1"
 BUILD_PATH="$2"
 WORKFLOW="$3"
-DATASET="$4"
-CONFIG="$5"
+CONFIG="$4"
 
 source "$BUILD_PATH/etc/profile.d/init.sh"
 
 PROG="$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH/$RUN_ID"
 cd "$RUNS_PATH/$RUN_ID" || exit
-$PROG --inspector --batch --inspector-id "$RUN_ID" --aod-file "$DI_DATASETS/$DATASET" "$CONFIG"
+$PROG --inspector --batch --inspector-id "$RUN_ID" "$CONFIG"

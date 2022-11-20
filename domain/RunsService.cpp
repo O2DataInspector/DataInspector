@@ -23,7 +23,7 @@ std::vector<std::string> RunsService::listDatasets() {
   return datasets;
 }
 
-std::string RunsService::start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::string& dataset) {
+std::string RunsService::start(const std::string& buildId, const std::string& workflow, const std::string& config, const std::optional<std::string>& dataset) {
   Run run{"", Run::Status::STARTING, buildId, workflow, config};
   run.id = runRepository.save(run);
   auto build = buildRepository.get(buildId);

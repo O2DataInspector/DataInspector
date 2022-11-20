@@ -46,7 +46,9 @@ Response::RunId RunsEndpoint::start(const httplib::Request& input, httplib::Resp
   auto buildId = input.get_header_value("buildId");
   auto workflow = input.get_header_value("workflow");
   auto config = input.get_header_value("config");
-  auto dataset = input.get_header_value("dataset");
+  std::optional<std::string> dataset;
+  if(input.has_header("dataset"))
+    dataset = input.get_header_value("dataset");
 
   return {runsService.start(buildId, workflow, config, dataset)};
 }

@@ -12,14 +12,15 @@
 
 class RunManager {
 public:
-  RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
-  void start(const Run& run, const Build& build, const std::string& dataset);
+  RunManager(const std::string& scriptPath, const std::string& datasetsPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
+  void start(const Run& run, const Build& build, const std::optional<std::string>& dataset);
   void stop(const std::string& runId);
 
 private:
   void remove(const std::string& runId);
 
-  std::string scriptPath;
+  const std::string scriptPath;
+  const std::string datasetsPath;
   DevicesRepository& devicesRepository;
   RunRepository& runRepository;
 
