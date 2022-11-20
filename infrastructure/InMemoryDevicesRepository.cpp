@@ -77,6 +77,7 @@ void InMemoryDevicesRepository::intercept(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::intercept" << std::endl;
   for(auto& deviceWithSocket : devices[runId]) {
+    deviceWithSocket.device.isSelected = true;
     deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_ON});
   }
   devicesMutex.unlock();
@@ -88,10 +89,12 @@ void InMemoryDevicesRepository::intercept(const std::string& runId, const std::v
 
   for(auto& deviceWithSocket : devices[runId]) {
     if(std::find(deviceNames.begin(), deviceNames.end(), deviceWithSocket.device.name) == deviceNames.end()) {
+      deviceWithSocket.device.isSelected = false;
       deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
       continue;
     }
 
+    deviceWithSocket.device.isSelected = true;
     deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_ON});
   }
   devicesMutex.unlock();
@@ -104,6 +107,7 @@ void InMemoryDevicesRepository::stopInterception(const std::string& runId, const
     if(std::find(deviceNames.begin(), deviceNames.end(), deviceWithSocket.device.name) == deviceNames.end())
       continue;
 
+    deviceWithSocket.device.isSelected = false;
     deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
   }
   devicesMutex.unlock();
@@ -113,6 +117,7 @@ void InMemoryDevicesRepository::stopInterception(const std::string& runId) {
   devicesMutex.lock();
   std::cout << "DeviceRepository::stopInterception" << std::endl;
   for(auto& deviceWithSocket : devices[runId]) {
+    deviceWithSocket.device.isSelected = false;
     deviceWithSocket.socket->asyncSend(DIMessage{DIMessage::Header::Type::INSPECT_OFF});
   }
   devicesMutex.unlock();

@@ -107,6 +107,7 @@ rapidjson::Document toJson<Device>(const Device& device) {
   message.SetObject();
   auto& alloc = message.GetAllocator();
   message.AddMember("name", Value(device.name.c_str(), alloc), alloc);
+  message.AddMember("isSelected", Value(device.isSelected), alloc);
 
   Value specs;
   specs.SetObject();

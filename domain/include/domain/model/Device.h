@@ -55,6 +55,7 @@ struct Specs
 struct Device {
   std::string runId;
   std::string name;
+  bool isSelected;
   Specs specs;
 };
 
