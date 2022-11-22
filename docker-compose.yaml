@@ -4,8 +4,6 @@ services:
   mongo:
     image: mongo
     restart: always
-    ports:
-      - "27017:27017"
     volumes:
       - type: volume
         target: /data/db
@@ -22,18 +20,13 @@ services:
     environment:
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
-      BUILDS_PATH: /di/builds
       DI_DATASETS: /di/datasets
-      WORK_DIR: /di/alice/sw/
+      WORK_DIR: /di/alice-sw
       ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
     volumes:
       - type: bind
-        source: /home/arczipt/alice
-        target: /di/alice
-        read_only: true
-      - type: bind
-        source: /home/arczipt/BUILDS_DOCKER
-        target: /di/builds
+        source: ${ALIBUILD_WORK_DIR}
+        target: /di/alice-sw
         read_only: true
       - type: bind
         source: /home/arczipt/DATASETS

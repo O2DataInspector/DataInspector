@@ -44,12 +44,13 @@ constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
 constexpr char STATS_ENDPOINT[]             = "/stats";
 
 int main(int argc, char* argv[]) {
-  if(argc < 2) {
-    std::cout << "Usage: proxy <execute-script>" << std::endl;
+  if(argc < 3) {
+    std::cout << "Usage: proxy <execute-script> <local-builds-path>" << std::endl;
     exit(1);
   }
 
   auto executeScriptPath = argv[1];
+  auto localBuildsPath = argv[2];
 
   mongoc_init();
   auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
@@ -126,7 +127,7 @@ int main(int argc, char* argv[]) {
           });
 
 
-  BuildDetector detector{buildRepository, std::getenv("BUILDS_PATH"), "O2Physics/O2"};
+  BuildDetector detector{buildRepository, localBuildsPath, "O2Physics/O2"};
   detector.detectBuilds();
 
   /**

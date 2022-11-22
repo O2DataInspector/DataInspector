@@ -21,7 +21,6 @@ void BuildDetector::detectBuilds() {
     if(!boost::filesystem::is_regular_file(path))
       return;
 
-    std::cout << "EXTENSION: " << path.filename().extension() << std::endl;
     if(path.filename().extension() != ".build")
       return;
 
