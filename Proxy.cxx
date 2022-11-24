@@ -17,7 +17,7 @@
 #include "domain/RunsService.h"
 
 #include "infrastructure/MongoMessageRepository.h"
-#include "infrastructure/InMemoryDevicesRepository.h"
+#include "infrastructure/MongoDevicesRepository.h"
 #include "infrastructure/MongoBuildRepository.h"
 #include "infrastructure/MongoRunRepository.h"
 
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
    */
   /// INFRASTRUCTURE
   MongoMessageRepository messageRepository{pool};
-  InMemoryDevicesRepository devicesRepository;
+  MongoDevicesRepository devicesRepository{pool};
   MongoBuildRepository buildRepository{pool};
   MongoRunRepository runRepository{pool};
 
