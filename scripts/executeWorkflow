@@ -10,4 +10,4 @@ source "$BUILD_PATH/etc/profile.d/init.sh"
 PROG="$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH/$RUN_ID"
 cd "$RUNS_PATH/$RUN_ID" || exit
-$PROG --inspector --batch --inspector-id "$RUN_ID" "$CONFIG"
+$PROG --inspector --batch --inspector-id "$RUN_ID" $CONFIG
