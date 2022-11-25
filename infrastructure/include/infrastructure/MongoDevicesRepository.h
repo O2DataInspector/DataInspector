@@ -17,7 +17,7 @@ public:
   MongoDevicesRepository(mongoc_client_pool_t* pool): pool(pool) {};
 
   void addDevice(const Device& device, DISocket* socket) override;
-  void removeDevice(const std::string& runId, const std::string& deviceName) override;
+  void removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) override;
   Device getDevice(const std::string& runId, const std::string& deviceName) override;
   std::vector<Device> getDevices(const std::string& runId) override;
 

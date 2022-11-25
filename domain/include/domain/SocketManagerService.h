@@ -16,7 +16,7 @@ public:
 private:
   void acceptNext();
   std::function<void(DIMessage)> receiveCallback(DISocket* diSocket, const Device& device);
-  std::function<void(std::size_t)> receiveErrorHandler(const Device& device);
+  std::function<void(std::size_t)> receiveErrorHandler(const Device& device, DISocket* socket);
 
   boost::asio::io_context ioContext;
   boost::asio::ip::tcp::acceptor acceptor;

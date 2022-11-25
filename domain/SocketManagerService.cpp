@@ -28,11 +28,11 @@ void SocketManagerService::start() {
     });
 }
 
-std::function<void(std::size_t)> SocketManagerService::receiveErrorHandler(const Device& device) {
-  return [this, device](std::size_t size) {
+std::function<void(std::size_t)> SocketManagerService::receiveErrorHandler(const Device& device, DISocket* socket) {
+  return [this, device, socket](std::size_t size) {
     //TODO: multiple devices with the same name (time pipelining)
     std::cout << "SocketManagerService::receive - ERROR" << std::endl;
-    devicesRepository.removeDevice(device.runId, device.name);
+    devicesRepository.removeDevice(device.runId, device.name, socket);
   };
 }
 
@@ -82,11 +82,12 @@ std::function<void(DIMessage)> SocketManagerService::receiveCallback(DISocket* d
   return [this,diSocket,device](DIMessage message) {
     if(message.header.type() == DIMessage::Header::Type::DEVICE_OFF) {
       std::cout << message.get<std::string>() << " IS NOT ACTIVE (runId=" << device.runId << ")" << std::endl;
+      devicesRepository.removeDevice(device.runId, device.name, diSocket);
       return;
     }
 
     messageRepository.addMessage(device.runId, toDomain(message));
-    diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device));
+    diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
   };
 }
 
@@ -256,7 +257,7 @@ void SocketManagerService::acceptNext() {
       auto device = toDomain(registerDeviceMsg);
       devicesRepository.addDevice(device, diSocket);
 
-      diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device));
+      diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
     });
 
     acceptNext();

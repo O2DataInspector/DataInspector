@@ -39,14 +39,14 @@ void MongoDevicesRepository::addDevice(const Device& device, DISocket* socket) {
   mongoc_client_pool_push (pool, client);
 }
 
-void MongoDevicesRepository::removeDevice(const std::string& runId, const std::string& deviceName) {
+void MongoDevicesRepository::removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) {
   runDevicesMutex.lock();
   std::cout << "DeviceRepository::removeDevice" << std::endl;
 
   auto& analysisDevices = runDevices[runId];
 
-  auto it = std::find_if(analysisDevices.begin(), analysisDevices.end(), [&deviceName](const DeviceWithSocket& deviceWithSocket) -> bool{
-    return deviceWithSocket.device.name == deviceName;
+  auto it = std::find_if(analysisDevices.begin(), analysisDevices.end(), [&deviceName, socket](const DeviceWithSocket& deviceWithSocket) -> bool{
+    return deviceWithSocket.device.name == deviceName && deviceWithSocket.socket == socket;
   });
 
   if(it != analysisDevices.end())

@@ -9,7 +9,7 @@ public:
   DevicesRepository() {};
 
   virtual void addDevice(const Device& device, DISocket* socket) = 0;
-  virtual void removeDevice(const std::string& runId, const std::string& deviceName) = 0;
+  virtual void removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) = 0;
   virtual Device getDevice(const std::string& runId, const std::string& deviceName) = 0;
   virtual std::vector<Device> getDevices(const std::string& runId) = 0;
 
