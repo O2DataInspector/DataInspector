@@ -1,6 +1,7 @@
 #include <iostream>
 #include "infrastructure/MongoDevicesRepository.h"
 #include "domain/DIMessages.h"
+#include <boost/lexical_cast.hpp>
 
 void MongoDevicesRepository::addDevice(const Device& device, DISocket* socket) {
   runDevicesMutex.lock();
@@ -28,6 +29,10 @@ void MongoDevicesRepository::addDevice(const Device& device, DISocket* socket) {
 
   BSON_APPEND_UTF8(doc, "runId", device.runId.c_str());
   BSON_APPEND_UTF8(doc, "name", device.name.c_str());
+  BSON_APPEND_UTF8(doc, "rank", std::to_string(device.specs.rank).c_str());
+  BSON_APPEND_UTF8(doc, "nSlots", std::to_string(device.specs.nSlots).c_str());
+  BSON_APPEND_UTF8(doc, "inputTimesliceId", std::to_string(device.specs.inputTimesliceId).c_str());
+  BSON_APPEND_UTF8(doc, "maxInputTimeslices", std::to_string(device.specs.maxInputTimeslices).c_str());
   if(!mongoc_collection_insert_one(
           collection, doc, NULL, NULL, &error))
   {
@@ -94,8 +99,22 @@ Device MongoDevicesRepository::getDevice(const std::string& runId, const std::st
     bson_iter_init_find(&iter, doc, "name");
     device.name = bson_iter_utf8(&iter, NULL);
 
+    bson_iter_init_find(&iter, doc, "rank");
+    device.specs.rank = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    bson_iter_init_find(&iter, doc, "nSlots");
+    device.specs.nSlots = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    bson_iter_init_find(&iter, doc, "inputTimesliceId");
+    device.specs.inputTimesliceId = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    bson_iter_init_find(&iter, doc, "maxInputTimeslices");
+    device.specs.maxInputTimeslices = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
     device.isSelected = false;
-    device.specs = Specs{{}, {}, {}, 0, 0, 0, 0};
+    device.specs.inputs = {};
+    device.specs.outputs = {};
+    device.specs.forwards = {};
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);
@@ -140,10 +159,22 @@ std::vector<Device> MongoDevicesRepository::getDevices(const std::string& runId)
     bson_iter_init_find(&iter, doc, "name");
     device.name = bson_iter_utf8(&iter, NULL);
 
-    device.isSelected = false;
-    device.specs = Specs{{}, {}, {}, 0, 0, 0, 0};
+    bson_iter_init_find(&iter, doc, "rank");
+    device.specs.rank = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
 
-    devices.emplace_back(device);
+    bson_iter_init_find(&iter, doc, "nSlots");
+    device.specs.nSlots = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    bson_iter_init_find(&iter, doc, "inputTimesliceId");
+    device.specs.inputTimesliceId = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    bson_iter_init_find(&iter, doc, "maxInputTimeslices");
+    device.specs.maxInputTimeslices = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+
+    device.isSelected = false;
+    device.specs.inputs = {};
+    device.specs.outputs = {};
+    device.specs.forwards = {};
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);
