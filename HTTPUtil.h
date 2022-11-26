@@ -4,6 +4,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include "serialization/JsonSerialization.h"
+#include "GlobalExceptionHandler.h"
 
 enum class HTTPMethod {
   GET,
@@ -24,9 +25,8 @@ std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandli
       responseDoc.Accept(writer);
 
       output.set_content(std::string{buffer.GetString(), buffer.GetSize()}, "application/json");
-    } catch (std::exception& e) {
-      std::cout << "ERROR: " << e.what() << std::endl;
-      output.status = 500;
+    } catch (...) {
+      GlobalExceptionHandler::handle(input, output);
     }
   };
 }
@@ -36,9 +36,8 @@ std::function<void(const httplib::Request&, httplib::Response&)> withErrorHandli
   return [processRequest](const httplib::Request& input, httplib::Response& output) {
     try {
       processRequest(input, output);
-    } catch (std::exception& e) {
-      std::cout << "ERROR: " << e.what() << std::endl;
-      output.status = 500;
+    } catch (...) {
+      GlobalExceptionHandler::handle(input, output);
     }
   };
 }
