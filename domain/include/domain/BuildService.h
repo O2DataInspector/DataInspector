@@ -7,13 +7,14 @@
 
 class BuildService {
 public:
-  BuildService(BuildRepository& buildRepository) : buildRepository(buildRepository) {};
+  BuildService(BuildRepository& buildRepository, const std::string& basePath) : buildRepository(buildRepository), basePath(basePath) {};
 
   std::vector<Build> getBuilds(int page, int count);
   Build get(const std::string& buildId);
   std::vector<std::string> listWorkflows(const std::string& buildId);
 
 private:
+  const std::string basePath;
   BuildRepository& buildRepository;
 };
 

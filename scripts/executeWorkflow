@@ -5,7 +5,7 @@ BUILD_PATH="$2"
 WORKFLOW="$3"
 CONFIG="$4"
 
-source "$BUILD_PATH/etc/profile.d/init.sh"
+source "$WORK_DIR/$ALIBUILD_ARCH_PREFIX/$BUILD_PATH/etc/profile.d/init.sh"
 
 PROG="$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH/$RUN_ID"
