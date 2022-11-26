@@ -289,64 +289,59 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   std::vector<bson_t*> queries{};
 
   auto* query = bson_new();
-  auto* matchHeader = bson_new();
-  auto* match = bson_new();
-  auto* limit = bson_new();
 
-  BSON_APPEND_UTF8(match, "runId", request.runId.c_str());
+  BSON_APPEND_UTF8(query, "runId", request.runId.c_str());
   if(request.device.has_value())
-    BSON_APPEND_UTF8(match, "sender", request.device.value().c_str());
+    BSON_APPEND_UTF8(query, "sender", request.device.value().c_str());
   if(request.messageOrigin.has_value())
-    BSON_APPEND_UTF8(match, "origin", request.messageOrigin.value().c_str());
+    BSON_APPEND_UTF8(query, "origin", request.messageOrigin.value().c_str());
   if(request.description.has_value())
-    BSON_APPEND_UTF8(match, "description", request.description.value().c_str());
+    BSON_APPEND_UTF8(query, "description", request.description.value().c_str());
 
   if(request.subSpecification.has_value())
-    BSON_APPEND_INT64(match, "subSpecification", request.subSpecification.value());
+    BSON_APPEND_INT64(query, "subSpecification", request.subSpecification.value());
   if(request.firstTForbit.has_value())
-    BSON_APPEND_INT64(match, "firstTForbit", request.firstTForbit.value());
+    BSON_APPEND_INT64(query, "firstTForbit", request.firstTForbit.value());
   if(request.tfCounter.has_value())
-    BSON_APPEND_INT64(match, "tfCounter", request.tfCounter.value());
+    BSON_APPEND_INT64(query, "tfCounter", request.tfCounter.value());
   if(request.runNumber.has_value())
-    BSON_APPEND_INT64(match, "runNumber", request.runNumber.value());
+    BSON_APPEND_INT64(query, "runNumber", request.runNumber.value());
   if(request.taskHash.has_value())
-    BSON_APPEND_UTF8(match, "taskHash", request.taskHash.value().c_str());
+    BSON_APPEND_UTF8(query, "taskHash", request.taskHash.value().c_str());
   if(request.payloadSerialization.has_value())
-    BSON_APPEND_UTF8(match, "payloadSerialization", request.payloadSerialization.value().c_str());
+    BSON_APPEND_UTF8(query, "payloadSerialization", request.payloadSerialization.value().c_str());
   if(request.payloadParts.has_value())
-    BSON_APPEND_INT64(match, "payloadParts", request.payloadParts.value());
+    BSON_APPEND_INT64(query, "payloadParts", request.payloadParts.value());
   if(request.payloadSplitIndex.has_value())
-    BSON_APPEND_INT64(match, "payloadSplitIndex", request.payloadSplitIndex.value());
+    BSON_APPEND_INT64(query, "payloadSplitIndex", request.payloadSplitIndex.value());
 
   if(request.StartTimeRange.has_value()) {
     auto* q = paramQuery(request.StartTimeRange.value());
-    BSON_APPEND_DOCUMENT(match, "startTime", q);
+    BSON_APPEND_DOCUMENT(query, "startTime", q);
     queries.push_back(q);
   }
   if(request.CreationTimeRange.has_value()) {
     auto* q = paramQuery(request.CreationTimeRange.value());
-    BSON_APPEND_DOCUMENT(match, "creationTimer", q);
+    BSON_APPEND_DOCUMENT(query, "creationTimer", q);
     queries.push_back(q);
   }
   if(request.DurationRange.has_value()) {
     auto* q = paramQuery(request.DurationRange.value());
-    BSON_APPEND_DOCUMENT(match, "duration", q);
+    BSON_APPEND_DOCUMENT(query, "duration", q);
     queries.push_back(q);
   }
   if(request.PayloadSizeRange.has_value()) {
     auto* q = paramQuery(request.PayloadSizeRange.value());
-    BSON_APPEND_DOCUMENT(match, "payloadSize", q);
+    BSON_APPEND_DOCUMENT(query, "payloadSize", q);
     queries.push_back(q);
   }
 
-  BSON_APPEND_DOCUMENT(matchHeader, "$match", match);
-  BSON_APPEND_DOCUMENT(query, "0", matchHeader);
-  if(request.count.has_value()) {
-    bson_decimal128_t v;
-    bson_decimal128_from_string(std::to_string(request.count.value()).c_str(), &v);
-    BSON_APPEND_DECIMAL128(limit, "$limit", &v);
-    BSON_APPEND_DOCUMENT(query, "1", limit);
-  }
+  bson_t* opts = NULL;
+  if(request.count.has_value())
+    opts = BCON_NEW ("limit", BCON_INT64(request.count.value()), "sort", "{", "_id", BCON_INT32(-1), "}");
+
+  size_t sz;
+  std::cout << bson_as_canonical_extended_json(query, &sz) << std::endl;
 
   bson_iter_t iter;
   bson_decimal128_t dec128;
@@ -362,7 +357,7 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   client = mongoc_client_pool_pop(pool);
   collection = mongoc_client_get_collection(client, "diProxy", "messages");
 
-  cursor = mongoc_collection_aggregate(collection, MONGOC_QUERY_NONE, query, NULL, NULL);
+  cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
 
   while(mongoc_cursor_next(cursor, &doc))
   {
@@ -427,9 +422,8 @@ std::vector<Message> MongoMessageRepository::search(const StatsRequest& request)
   mongoc_client_pool_push (pool, client);
 
   bson_destroy(query);
-  bson_destroy(match);
-  bson_destroy(matchHeader);
-  bson_destroy(limit);
+  if(opts != NULL)
+    bson_destroy(opts);
   for(bson_t* q : queries) {
     bson_destroy(q);
   }
