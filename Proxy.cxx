@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
   RunsService runsService{runManager, runRepository, buildRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
-  BuildService analysesService{buildRepository, std::string{std::getenv("WORK_DIR")} + std::getenv("ALIBUILD_ARCH_PREFIX")};
+  BuildService analysesService{buildRepository, std::string{std::getenv("WORK_DIR")} + "/" + std::getenv("ALIBUILD_ARCH_PREFIX")};
   SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository, runRepository};
   socketManagerService.start();
 
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
   addEndpoint<void>(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
 
   /// ANALYSIS
-  addEndpoint<Response::BuildList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getAnalyses));
+  addEndpoint<Response::BuildList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getBuilds));
   addEndpoint<Response::WorkflowList>(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, listWorkflows));
 
 

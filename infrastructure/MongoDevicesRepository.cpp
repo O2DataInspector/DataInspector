@@ -1,7 +1,7 @@
 #include <iostream>
 #include "infrastructure/MongoDevicesRepository.h"
-#include "domain/DIMessages.h"
 #include <boost/lexical_cast.hpp>
+#include "infrastructure/MongoOperation.h"
 
 void MongoDevicesRepository::addDevice(const Device& device, DISocket* socket) {
   runDevicesMutex.lock();
@@ -15,33 +15,37 @@ void MongoDevicesRepository::addDevice(const Device& device, DISocket* socket) {
 
   //SAVE IN DB
   bson_t *doc;
-  bson_oid_t oid;
-  bson_error_t error;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
 
-  client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "devices");
-  doc = bson_new();
+  MongoOperation mongoOp{
+    pool,
+    [&collection, &doc, &device](mongoc_client_t* client) {
+      bson_oid_t oid;
+      bson_error_t error;
 
-  bson_oid_init(&oid, NULL);
-  BSON_APPEND_OID(doc, "_id", &oid);
+      collection = mongoc_client_get_collection(client, "diProxy", "devices");
+      doc = bson_new();
 
-  BSON_APPEND_UTF8(doc, "runId", device.runId.c_str());
-  BSON_APPEND_UTF8(doc, "name", device.name.c_str());
-  BSON_APPEND_UTF8(doc, "rank", std::to_string(device.specs.rank).c_str());
-  BSON_APPEND_UTF8(doc, "nSlots", std::to_string(device.specs.nSlots).c_str());
-  BSON_APPEND_UTF8(doc, "inputTimesliceId", std::to_string(device.specs.inputTimesliceId).c_str());
-  BSON_APPEND_UTF8(doc, "maxInputTimeslices", std::to_string(device.specs.maxInputTimeslices).c_str());
-  if(!mongoc_collection_insert_one(
-          collection, doc, NULL, NULL, &error))
-  {
-    fprintf(stderr, "%s\n", error.message);
-  }
-  bson_destroy(doc);
-  mongoc_collection_destroy(collection);
+      bson_oid_init(&oid, NULL);
+      BSON_APPEND_OID(doc, "_id", &oid);
 
-  mongoc_client_pool_push (pool, client);
+      BSON_APPEND_UTF8(doc, "runId", device.runId.c_str());
+      BSON_APPEND_UTF8(doc, "name", device.name.c_str());
+      BSON_APPEND_UTF8(doc, "rank", std::to_string(device.specs.rank).c_str());
+      BSON_APPEND_UTF8(doc, "nSlots", std::to_string(device.specs.nSlots).c_str());
+      BSON_APPEND_UTF8(doc, "inputTimesliceId", std::to_string(device.specs.inputTimesliceId).c_str());
+      BSON_APPEND_UTF8(doc, "maxInputTimeslices", std::to_string(device.specs.maxInputTimeslices).c_str());
+      if(!mongoc_collection_insert_one(collection, doc, NULL, NULL, &error)) {
+        throw DeviceNotSaved{error.message};
+      }
+    },
+    [&doc, &collection]() {
+      bson_destroy(doc);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
 }
 
 void MongoDevicesRepository::removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) {
@@ -56,6 +60,9 @@ void MongoDevicesRepository::removeDevice(const std::string& runId, const std::s
 
   if(it != analysisDevices.end())
     analysisDevices.erase(it);
+
+  if(analysisDevices.empty())
+    runDevices.erase(runId);
 
   runDevicesMutex.unlock();
 }
@@ -74,52 +81,59 @@ Device MongoDevicesRepository::getDevice(const std::string& runId, const std::st
   }
   runDevicesMutex.unlock();
 
-  bson_iter_t iter;
   bson_t *query;
   const bson_t *doc;
   mongoc_cursor_t *cursor;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
   Device device;
 
-  client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "devices");
+  MongoOperation mongoOp{
+    pool,
+    [&device, &collection, &cursor, &doc, &query, &runId, &deviceName](mongoc_client_t* client) {
+      collection = mongoc_client_get_collection(client, "diProxy", "devices");
 
-  query = bson_new();
-  BSON_APPEND_UTF8(query, "runId", runId.c_str());
-  BSON_APPEND_UTF8(query, "name", deviceName.c_str());
+      query = bson_new();
+      BSON_APPEND_UTF8(query, "runId", runId.c_str());
+      BSON_APPEND_UTF8(query, "name", deviceName.c_str());
 
-  cursor = mongoc_collection_find_with_opts(
-          collection, query, NULL, NULL);
+      cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
 
-  while(mongoc_cursor_next(cursor, &doc))
-  {
-    device.runId = runId;
+      if (mongoc_cursor_next(cursor, &doc)) {
+        bson_iter_t iter;
+        device.runId = runId;
 
-    bson_iter_init_find(&iter, doc, "name");
-    device.name = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "name");
+        device.name = bson_iter_utf8(&iter, NULL);
 
-    bson_iter_init_find(&iter, doc, "rank");
-    device.specs.rank = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+        bson_iter_init_find(&iter, doc, "rank");
+        device.specs.rank = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
 
-    bson_iter_init_find(&iter, doc, "nSlots");
-    device.specs.nSlots = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+        bson_iter_init_find(&iter, doc, "nSlots");
+        device.specs.nSlots = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
 
-    bson_iter_init_find(&iter, doc, "inputTimesliceId");
-    device.specs.inputTimesliceId = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+        bson_iter_init_find(&iter, doc, "inputTimesliceId");
+        device.specs.inputTimesliceId = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
 
-    bson_iter_init_find(&iter, doc, "maxInputTimeslices");
-    device.specs.maxInputTimeslices = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
+        bson_iter_init_find(&iter, doc, "maxInputTimeslices");
+        device.specs.maxInputTimeslices = boost::lexical_cast<uint64_t>(bson_iter_utf8(&iter, NULL));
 
-    device.isSelected = false;
-    device.specs.inputs = {};
-    device.specs.outputs = {};
-    device.specs.forwards = {};
-  }
-  bson_destroy(query);
-  mongoc_cursor_destroy(cursor);
-  mongoc_collection_destroy(collection);
-  mongoc_client_pool_push (pool, client);
+        device.isSelected = false;
+        device.specs.inputs = {};
+        device.specs.outputs = {};
+        device.specs.forwards = {};
+      } else {
+        throw DeviceNotFound{"Device not found for runId=" + runId + " and name=" + deviceName};
+      }
+    },
+    [&query, &cursor,&collection]() {
+      bson_destroy(query);
+      mongoc_cursor_destroy(cursor);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
+
   return device;
 }
 
@@ -175,6 +189,8 @@ std::vector<Device> MongoDevicesRepository::getDevices(const std::string& runId)
     device.specs.inputs = {};
     device.specs.outputs = {};
     device.specs.forwards = {};
+
+    devices.emplace_back(device);
   }
   bson_destroy(query);
   mongoc_cursor_destroy(cursor);

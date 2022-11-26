@@ -13,7 +13,7 @@ T lexicalCastOrDefault(const std::string& src, T def) {
   }
 }
 
-Response::BuildList BuildsEndpoint::getAnalyses(const httplib::Request& input, httplib::Response& output) {
+Response::BuildList BuildsEndpoint::getBuilds(const httplib::Request& input, httplib::Response& output) {
   auto page = lexicalCastOrDefault<int>(input.get_header_value("page"), 0);
   auto count = lexicalCastOrDefault<int>(input.get_header_value("count"), 10);
 

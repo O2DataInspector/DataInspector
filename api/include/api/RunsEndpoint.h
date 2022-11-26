@@ -7,6 +7,10 @@
 #include "response/RunId.h"
 #include "api/response/DatasetList.h"
 
+struct StartRunBadRequest : std::runtime_error {
+  StartRunBadRequest(const std::string& what) : std::runtime_error(what) {};
+};
+
 class RunsEndpoint {
 public:
   RunsEndpoint(RunsService& runsService) : runsService(runsService) {};

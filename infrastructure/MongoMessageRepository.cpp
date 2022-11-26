@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <bson/bson.h>
 #include <mongoc/mongoc.h>
+#include "infrastructure/MongoOperation.h"
 #include <boost/algorithm/string.hpp>
 
 std::string MongoMessageRepository::addMessage(const std::string& runId, const Message& message) {
@@ -11,50 +12,54 @@ std::string MongoMessageRepository::addMessage(const std::string& runId, const M
 
   bson_t *doc;
   bson_oid_t oid;
-  bson_error_t error;
-  bson_decimal128_t dec;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
+  char str_oid[25];
 
-  char creat[25], str_oid[25];
+  MongoOperation mongoOp{
+    pool,
+    [&collection, &doc, &oid, &message, &runId](mongoc_client_t* client) {
+      bson_error_t error;
+      bson_decimal128_t dec;
+      char creat[25];
 
-  client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "messages");
+      collection = mongoc_client_get_collection(client, "diProxy", "messages");
 
-  doc = bson_new();
+      doc = bson_new();
 
-  bson_oid_init(&oid, NULL);
-  BSON_APPEND_OID(doc, "_id", &oid);
+      bson_oid_init(&oid, NULL);
+      BSON_APPEND_OID(doc, "_id", &oid);
 
-  snprintf(creat, sizeof creat, "%llu", message.creationTimer);
-  bson_decimal128_from_string(creat, &dec);
-  BSON_APPEND_DECIMAL128(doc, "creationTimer", &dec);
+      snprintf(creat, sizeof creat, "%llu", message.creationTimer);
+      bson_decimal128_from_string(creat, &dec);
+      BSON_APPEND_DECIMAL128(doc, "creationTimer", &dec);
 
-  BSON_APPEND_UTF8(doc, "runId", runId.c_str());
-  BSON_APPEND_UTF8(doc, "sender", message.sender.c_str());
-  BSON_APPEND_INT32(doc, "duration", message.duration);
-  BSON_APPEND_INT32(doc, "startTime", message.startTime);
-  BSON_APPEND_UTF8(doc, "origin", message.origin.c_str());
-  BSON_APPEND_UTF8(doc, "description", message.description.c_str());
-  BSON_APPEND_INT32(doc, "subSpecification", message.subSpecification);
-  BSON_APPEND_INT32(doc, "firstTForbit", message.firstTForbit);
-  BSON_APPEND_INT32(doc, "tfCounter", message.tfCounter);
-  BSON_APPEND_INT32(doc, "runNumber", message.runNumber);
-  BSON_APPEND_INT32(doc, "payloadSize", message.payloadSize);
-  BSON_APPEND_INT32(doc, "splitPayloadParts", message.splitPayloadParts);
-  BSON_APPEND_UTF8(doc, "payloadSerialization", message.payloadSerialization.c_str());
-  BSON_APPEND_INT32(doc, "payloadSplitIndex", message.payloadSplitIndex);
-  BSON_APPEND_BOOL(doc, "read", false);
-  BSON_APPEND_UTF8(doc, "payload", message.payload.c_str());
+      BSON_APPEND_UTF8(doc, "runId", runId.c_str());
+      BSON_APPEND_UTF8(doc, "sender", message.sender.c_str());
+      BSON_APPEND_INT32(doc, "duration", message.duration);
+      BSON_APPEND_INT32(doc, "startTime", message.startTime);
+      BSON_APPEND_UTF8(doc, "origin", message.origin.c_str());
+      BSON_APPEND_UTF8(doc, "description", message.description.c_str());
+      BSON_APPEND_INT32(doc, "subSpecification", message.subSpecification);
+      BSON_APPEND_INT32(doc, "firstTForbit", message.firstTForbit);
+      BSON_APPEND_INT32(doc, "tfCounter", message.tfCounter);
+      BSON_APPEND_INT32(doc, "runNumber", message.runNumber);
+      BSON_APPEND_INT32(doc, "payloadSize", message.payloadSize);
+      BSON_APPEND_INT32(doc, "splitPayloadParts", message.splitPayloadParts);
+      BSON_APPEND_UTF8(doc, "payloadSerialization", message.payloadSerialization.c_str());
+      BSON_APPEND_INT32(doc, "payloadSplitIndex", message.payloadSplitIndex);
+      BSON_APPEND_BOOL(doc, "read", false);
+      BSON_APPEND_UTF8(doc, "payload", message.payload.c_str());
 
-  if(!mongoc_collection_insert_one(
-     collection, doc, NULL, NULL, &error))
-  {
-	fprintf(stderr, "%s\n", error.message);
-  }
-  bson_destroy(doc);
-  mongoc_collection_destroy(collection);
-  mongoc_client_pool_push(pool, client);
+      if(!mongoc_collection_insert_one(collection, doc, NULL, NULL, &error))
+        throw MessageNotSaved{error.message};
+    },
+    [&doc, &collection]() {
+      bson_destroy(doc);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
 
   bson_oid_to_string(&oid, str_oid);
   std::string id = str_oid;
@@ -62,132 +67,96 @@ std::string MongoMessageRepository::addMessage(const std::string& runId, const M
 }
 
 Message MongoMessageRepository::getMessage(const std::string& id) {
-  bson_oid_t oid;
-  bson_iter_t iter;
   bson_t *query;
   const bson_t *doc;
-  bson_decimal128_t dec128;
   mongoc_cursor_t *cursor;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
+  Message message;
 
-  struct Message message;
+  MongoOperation mongoOp{
+    pool,
+    [&collection, &query, &cursor, &doc, &message, &id](mongoc_client_t* client) {
+      bson_oid_t oid;
+      bson_iter_t iter;
+      bson_decimal128_t dec128;
+      char creat[25];
 
-  char creat[25];
+      collection = mongoc_client_get_collection(client, "diProxy", "messages");
 
-  client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "messages");
-  
-  query = bson_new();
-  bson_oid_init_from_string(&oid, id.c_str());
-  BSON_APPEND_OID(query, "_id", &oid);
+      query = bson_new();
+      bson_oid_init_from_string(&oid, id.c_str());
+      BSON_APPEND_OID(query, "_id", &oid);
 
-  cursor = mongoc_collection_find_with_opts(
-	collection, query, NULL, NULL);
+      cursor = mongoc_collection_find_with_opts(
+              collection, query, NULL, NULL);
 
-  /* fixme: check wether bson_iter_utf8 allocates string on heap */
-  if(mongoc_cursor_next(cursor, &doc))
-  {
-	message.id = id.c_str();	
+      if(mongoc_cursor_next(cursor, &doc)) {
+        message.id = id.c_str();
 
-	bson_iter_init_find(&iter, doc, "creationTimer");
-	bson_iter_decimal128(&iter, &dec128);
-	bson_decimal128_to_string(&dec128, creat);
-	message.creationTimer = strtoul(creat, NULL, 10);
+        bson_iter_init_find(&iter, doc, "creationTimer");
+        bson_iter_decimal128(&iter, &dec128);
+        bson_decimal128_to_string(&dec128, creat);
+        message.creationTimer = strtoul(creat, NULL, 10);
 
-	bson_iter_init_find(&iter, doc, "sender");
-	message.sender = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "sender");
+        message.sender = bson_iter_utf8(&iter, NULL);
 
-	bson_iter_init_find(&iter, doc, "duration");
-	message.duration = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "duration");
+        message.duration = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "startTime");
-	message.startTime = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "startTime");
+        message.startTime = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "origin");
-	message.origin = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "origin");
+        message.origin = bson_iter_utf8(&iter, NULL);
 
-  	bson_iter_init_find(&iter, doc, "description");
-	message.description = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "description");
+        message.description = bson_iter_utf8(&iter, NULL);
 
-  	bson_iter_init_find(&iter, doc, "subSpecification");
-	message.subSpecification = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "subSpecification");
+        message.subSpecification = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "firstTForbit");
-	message.firstTForbit = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "firstTForbit");
+        message.firstTForbit = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "tfCounter");
-	message.tfCounter = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "tfCounter");
+        message.tfCounter = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "runNumber");
-	message.runNumber = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "runNumber");
+        message.runNumber = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "payloadSize");
-	message.payloadSize = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "payloadSize");
+        message.payloadSize = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "splitPayloadParts");
-	message.splitPayloadParts = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "splitPayloadParts");
+        message.splitPayloadParts = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "payloadSerialization");
-	message.payloadSerialization = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "payloadSerialization");
+        message.payloadSerialization = bson_iter_utf8(&iter, NULL);
 
-  	bson_iter_init_find(&iter, doc, "payloadSplitIndex");
-	message.payloadSplitIndex = bson_iter_int32(&iter);
+        bson_iter_init_find(&iter, doc, "payloadSplitIndex");
+        message.payloadSplitIndex = bson_iter_int32(&iter);
 
-  	bson_iter_init_find(&iter, doc, "payload");
-	message.payload = bson_iter_utf8(&iter, NULL);
-  }
-  else
-  {
- 	fprintf(stderr, "proxy: mongoc_cursor_next: no id %s in DB\n",
-	        id.c_str());
-	message.id = "-1";
-  }
-  bson_destroy(query);
-  mongoc_collection_destroy(collection);
-  mongoc_cursor_destroy(cursor);
-  mongoc_client_pool_push(pool, client);
+        bson_iter_init_find(&iter, doc, "payload");
+        message.payload = bson_iter_utf8(&iter, NULL);
+      } else {
+        throw MessageNotFound{"Message not found for id=" + id};
+      }
+    },
+    [&query, &collection, &cursor]() {
+      bson_destroy(query);
+      mongoc_collection_destroy(collection);
+      mongoc_cursor_destroy(cursor);
+    }
+  };
+
+  mongoOp.exec();
 
   return message;
 }
 
 std::vector<Message> MongoMessageRepository::newerMessages(const std::string& runId, const std::string& messageId, const std::vector<std::string>& devices, int count) {
   std::cout << "MongoMessageRepository::newerMessages" << std::endl;
-  /* fixme: if count not given, return all of the content of db */
-  /* fixme: add this to commit log
- * check added devices strings
- * in case when someone would like to inject code into database */
-  /*
- * fixme: add this to commit log
- * overall query would look something like this:
- * (devices not included):
-  pipeline = BCON_NEW(
-    "0",
-      "{",
-        "$match",
-               "{",
-                 "_id",
-		     "{",
-                       "$gt",
-                       BCON_OID(&oid),
-                     "}",
-	       "}",
-      "}",
-    "1",
-      "{",
-        "$sort",
-	      "{",
-		"_id",
-		BCON_INT32(1),
-	      "}",
-      "}",
-    "2",
-      "{",
-        "$limit",
-        BCON_INT32(count),
-      "}"
-  );
-  */
   bson_iter_t iter;
   bson_t *pipeline;
   bson_t pipe;

@@ -6,6 +6,8 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include "domain/RunRepository.h"
+#include "domain/DevicesRepository.h"
 
 SocketManagerService::SocketManagerService(int port,
                                            int threads,
@@ -86,7 +88,13 @@ std::function<void(DIMessage)> SocketManagerService::receiveCallback(DISocket* d
       return;
     }
 
-    messageRepository.addMessage(device.runId, toDomain(message));
+    try {
+      messageRepository.addMessage(device.runId, toDomain(message));
+    } catch (const MessageNotSaved& ex) {
+      std::cout << "SocketManager[ERROR] - Message not saved" << std::endl;
+      std::cout << ex.what() << std::endl;
+    }
+
     diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
   };
 }
@@ -252,10 +260,17 @@ void SocketManagerService::acceptNext() {
       auto registerDeviceMsg = fromJson<DIMessages::RegisterDevice>(initMsg.get<rapidjson::Document>());
       std::cout << registerDeviceMsg.name << " IS ACTIVE (runId=" << registerDeviceMsg.runId << ")" << std::endl;
 
-      runRepository.updateStatus(registerDeviceMsg.runId, Run::Status::RUNNING);
-
       auto device = toDomain(registerDeviceMsg);
-      devicesRepository.addDevice(device, diSocket);
+      try {
+        runRepository.updateStatus(registerDeviceMsg.runId, Run::Status::RUNNING);
+        devicesRepository.addDevice(device, diSocket);
+      } catch (const RunNotSaved& ex) {
+        std::cout << "SocketManager[ERROR] - Status of run not updated" << std::endl;
+        std::cout << ex.what() << std::endl;
+      } catch (const DeviceNotSaved& ex) {
+        std::cout << "SocketManager[ERROR] - Device not saved" << std::endl;
+        std::cout << ex.what() << std::endl;
+      }
 
       diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
     });

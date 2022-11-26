@@ -1,34 +1,40 @@
 #include "infrastructure/MongoBuildRepository.h"
 #include <stdexcept>
+#include "infrastructure/MongoOperation.h"
 
 std::string MongoBuildRepository::save(const Build& build) {
-  bson_t *doc;
   bson_oid_t oid;
-  bson_error_t error;
-  mongoc_client_t *client;
+  bson_t *doc;
   mongoc_collection_t *collection;
   char str_oid[25];
 
-  client = mongoc_client_pool_pop(pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
-  doc = bson_new();
+  MongoOperation mongoOp{
+    pool,
+    [&collection, &doc, &oid, &build](mongoc_client_t* client) {
+      bson_error_t error;
 
-  bson_oid_init(&oid, NULL);
-  BSON_APPEND_OID(doc, "_id", &oid);
+      collection = mongoc_client_get_collection(client, "diProxy", "analyses");
+      doc = bson_new();
 
-  BSON_APPEND_UTF8(doc, "url", build.url.c_str());
-  BSON_APPEND_UTF8(doc, "name", build.name.c_str());
-  BSON_APPEND_UTF8(doc, "branch", build.branch.c_str());
-  BSON_APPEND_UTF8(doc, "path", build.path.c_str());
-  if(!mongoc_collection_insert_one(
-     collection, doc, NULL, NULL, &error))
-  {
-	fprintf(stderr, "%s\n", error.message);
-  }
-  bson_destroy(doc);
-  mongoc_collection_destroy(collection);
+      bson_oid_init(&oid, NULL);
+      BSON_APPEND_OID(doc, "_id", &oid);
 
-  mongoc_client_pool_push (pool, client);
+      BSON_APPEND_UTF8(doc, "url", build.url.c_str());
+      BSON_APPEND_UTF8(doc, "name", build.name.c_str());
+      BSON_APPEND_UTF8(doc, "branch", build.branch.c_str());
+      BSON_APPEND_UTF8(doc, "path", build.path.c_str());
+      if(!mongoc_collection_insert_one(collection, doc, NULL, NULL, &error)){
+        throw BuildNotSaved{error.message};
+      }
+    },
+    [&doc, &collection]() {
+      bson_destroy(doc);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
+
   bson_oid_to_string(&oid, str_oid);
   std::string id = str_oid;
   return id;
@@ -96,91 +102,115 @@ std::vector<Build> MongoBuildRepository::getAnalyses(int page, int count) {
 }
 
 Build MongoBuildRepository::get(const std::string& buildId) {
-  bson_oid_t oid;
-  bson_iter_t iter;
   bson_t *query;
   const bson_t *doc;
   mongoc_cursor_t *cursor;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
-  struct Build build;
+  Build build;
 
-  client = mongoc_client_pool_pop (pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
-  
-  query = bson_new();
-  bson_oid_init_from_string(&oid, buildId.c_str());
-  BSON_APPEND_OID(query, "_id", &oid);
+  MongoOperation mongoOp{
+    pool,
+    [&query, &doc, &cursor, &collection, &buildId, &build](mongoc_client_t* client) {
+      bson_oid_t oid;
 
-  cursor = mongoc_collection_find_with_opts(
-	collection, query, NULL, NULL);
+      collection = mongoc_client_get_collection(client, "diProxy", "analyses");
 
-  while(mongoc_cursor_next(cursor, &doc))
-  {
-    build.id = buildId.c_str();
+      query = bson_new();
+      bson_oid_init_from_string(&oid, buildId.c_str());
+      BSON_APPEND_OID(query, "_id", &oid);
 
-    bson_iter_init_find(&iter, doc, "url");
-    build.url = bson_iter_utf8(&iter, NULL);
+      cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
 
-    bson_iter_init_find(&iter, doc, "name");
-    build.name = bson_iter_utf8(&iter, NULL);
+      bson_error_t error;
+      if(mongoc_cursor_next(cursor, &doc)) {
+        bson_iter_t iter;
 
-    bson_iter_init_find(&iter, doc, "branch");
-    build.branch = bson_iter_utf8(&iter, NULL);
+        build.id = buildId;
 
-    bson_iter_init_find(&iter, doc, "path");
-    build.path = bson_iter_utf8(&iter, NULL);
-  }
-  bson_destroy(query);
-  mongoc_cursor_destroy(cursor);
-  mongoc_collection_destroy(collection);
-  mongoc_client_pool_push (pool, client);
+        bson_iter_init_find(&iter, doc, "url");
+        build.url = bson_iter_utf8(&iter, NULL);
+
+        bson_iter_init_find(&iter, doc, "name");
+        build.name = bson_iter_utf8(&iter, NULL);
+
+        bson_iter_init_find(&iter, doc, "branch");
+        build.branch = bson_iter_utf8(&iter, NULL);
+
+        bson_iter_init_find(&iter, doc, "path");
+        build.path = bson_iter_utf8(&iter, NULL);
+      } else {
+        throw BuildNotFound{"Build not found for id=" + buildId};
+      }
+
+      if (mongoc_cursor_error (cursor, &error))
+        throw BuildNotFound{"Cursor failure"};
+    },
+    [&query, &cursor, &collection]() {
+      bson_destroy(query);
+      mongoc_cursor_destroy(cursor);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
+
   return build;
 }
 
 std::optional<Build> MongoBuildRepository::getByName(const std::string& name) {
   const bson_oid_t* oid_ptr;
-  bson_iter_t iter;
   bson_t *query;
   const bson_t *doc;
   mongoc_cursor_t *cursor;
-  mongoc_client_t *client;
   mongoc_collection_t *collection;
-  char str_oid[25];
   std::optional<Build> build;
 
-  client = mongoc_client_pool_pop (pool);
-  collection = mongoc_client_get_collection(client, "diProxy", "analyses");
+  MongoOperation mongoOp{
+    pool,
+    [&query, &collection, &cursor, &build, &name, &doc, &oid_ptr](mongoc_client_t* client) {
+      collection = mongoc_client_get_collection(client, "diProxy", "analyses");
 
-  query = bson_new();
-  BSON_APPEND_UTF8(query, "name", name.c_str());
+      query = bson_new();
+      BSON_APPEND_UTF8(query, "name", name.c_str());
 
-  cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
+      cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
 
-  while(mongoc_cursor_next(cursor, &doc))
-  {
-    build.emplace();
+      bson_error_t error;
+      if(mongoc_cursor_next(cursor, &doc)) {
+        bson_iter_t iter;
+        char str_oid[25];
 
-    bson_iter_init_find(&iter, doc, "_id");
-    oid_ptr = bson_iter_oid(&iter);
-    bson_oid_to_string(oid_ptr, str_oid);
-    build.value().id = str_oid;
+        build.emplace();
 
-    bson_iter_init_find(&iter, doc, "url");
-    build.value().url = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "_id");
+        oid_ptr = bson_iter_oid(&iter);
+        bson_oid_to_string(oid_ptr, str_oid);
+        build.value().id = str_oid;
 
-    bson_iter_init_find(&iter, doc, "name");
-    build.value().name = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "url");
+        build.value().url = bson_iter_utf8(&iter, NULL);
 
-    bson_iter_init_find(&iter, doc, "branch");
-    build.value().branch = bson_iter_utf8(&iter, NULL);
+        bson_iter_init_find(&iter, doc, "name");
+        build.value().name = bson_iter_utf8(&iter, NULL);
 
-    bson_iter_init_find(&iter, doc, "path");
-    build.value().path = bson_iter_utf8(&iter, NULL);
-  }
-  bson_destroy(query);
-  mongoc_cursor_destroy(cursor);
-  mongoc_collection_destroy(collection);
-  mongoc_client_pool_push (pool, client);
+        bson_iter_init_find(&iter, doc, "branch");
+        build.value().branch = bson_iter_utf8(&iter, NULL);
+
+        bson_iter_init_find(&iter, doc, "path");
+        build.value().path = bson_iter_utf8(&iter, NULL);
+      }
+
+      if (mongoc_cursor_error (cursor, &error))
+        throw BuildNotFound{"Cursor failure"};
+    },
+    [&query, &cursor, &collection]() {
+      bson_destroy(query);
+      mongoc_cursor_destroy(cursor);
+      mongoc_collection_destroy(collection);
+    }
+  };
+
+  mongoOp.exec();
+
   return build;
 }

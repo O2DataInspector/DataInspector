@@ -4,6 +4,14 @@
 #include "domain/model/Build.h"
 #include <optional>
 
+struct BuildNotFound : std::runtime_error {
+  BuildNotFound(const std::string& what) : std::runtime_error(what) {};
+};
+
+struct BuildNotSaved : std::runtime_error {
+  BuildNotSaved(const std::string& what) : std::runtime_error(what) {};
+};
+
 class BuildRepository {
 public:
   virtual ~BuildRepository() {};

@@ -12,7 +12,7 @@ public:
   BuildsEndpoint(BuildService& analysesService) : analysesService(analysesService) {};
 
   Response::BuildId importBuild(const httplib::Request& input, httplib::Response& output);
-  Response::BuildList getAnalyses(const httplib::Request& input, httplib::Response& output);
+  Response::BuildList getBuilds(const httplib::Request& input, httplib::Response& output);
   Response::WorkflowList listWorkflows(const httplib::Request& input, httplib::Response& output);
 
 private:

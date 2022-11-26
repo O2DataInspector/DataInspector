@@ -50,6 +50,9 @@ Response::RunId RunsEndpoint::start(const httplib::Request& input, httplib::Resp
   if(input.has_header("dataset"))
     dataset = input.get_header_value("dataset");
 
+  if(buildId.empty() || workflow.empty())
+    throw StartRunBadRequest{"Not enough arguments to start a run"};
+
   return {runsService.start(buildId, workflow, config, dataset)};
 }
 

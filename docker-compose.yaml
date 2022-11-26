@@ -22,7 +22,7 @@ services:
       RUNS_PATH: /di/runs
       DI_DATASETS: /di/datasets
       WORK_DIR: /di/alice-sw
-      ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
+      ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64
     volumes:
       - type: bind
         source: ${ALIBUILD_WORK_DIR}

@@ -4,6 +4,14 @@
 #include "domain/model/Device.h"
 #include "DISocket.hpp"
 
+struct DeviceNotFound : std::runtime_error {
+  DeviceNotFound(const std::string& what) : std::runtime_error(what) {};
+};
+
+struct DeviceNotSaved : std::runtime_error {
+  DeviceNotSaved(const std::string& what) : std::runtime_error(what) {};
+};
+
 class DevicesRepository {
 public:
   DevicesRepository() {};

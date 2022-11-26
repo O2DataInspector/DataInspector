@@ -3,6 +3,15 @@
 
 #include "domain/model/Run.h"
 #include <vector>
+#include <stdexcept>
+
+struct RunNotFound : std::runtime_error {
+  RunNotFound(const std::string& what) : std::runtime_error(what) {};
+};
+
+struct RunNotSaved : std::runtime_error {
+  RunNotSaved(const std::string& what) : std::runtime_error(what) {};
+};
 
 class RunRepository {
 public:
