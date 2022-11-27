@@ -1,14 +1,4 @@
 # DataInspector
-## Dependencies
-* cmake
-* arrow
-* libmongoc
-* root
-* boost
-* rapidjson
-* [httplib](https://github.com/yhirose/cpp-httplib)
-
-All dependencies can be installed by in simillar manner by following the example installation on Ubuntu 20.04 in [Dockerfile](builder/Dockerfile).
 
 ## Parameters
 Program requires those environment variables to be declared:
@@ -28,10 +18,40 @@ Proxy expects two arguments to be provided:
         3. Branch name (required - but not used at the moment)
         4. Relative path from ALIBUILD_WORK_DIR for specific architecture (i.e. ~/alice/sw/$ALIBUILD_ARCH_PREFIX) to chosen build (same as in alienv, i.e. O2/data-inspector-cleaned-local1)
 
-## Running
+## Local
+### Dependencies
+* cmake
+* arrow
+* libmongoc
+* root
+* boost
+* rapidjson
+* [httplib](https://github.com/yhirose/cpp-httplib)
+
+All dependencies can be installed by in simillar manner by following the example installation on Ubuntu 20.04 in [Dockerfile](builder/Dockerfile).
+
+### Running
 1. Build proxy:
     1. ```mkdir build && cd build```
     2. ```cmake ..```
     3. ```cmake --build .```
 3. Start MongoDB
-2. Run: ```./proxy <execute-script-path> <builds-definitions-path>```
+4. Declare all environment variables
+5. Run: ```./proxy <execute-script-path> <builds-definitions-path>```
+
+
+## Docker
+Currently prepared Dockerfiles are working only on Ubuntu 20.04
+
+### Building O2
+Force build for 'ubuntu2004_x86-64` with docker:
+```aliBuild build O2 --defaults o2 -a ubuntu2004_x86-64 --docker```
+
+### Before running
+1. Build docker image containing all dependencies: ```docker build -t di-proxy-builder builder/``` (can take few hours)
+
+### Running
+1. Build docker image with proxy: ```docker build -t di-proxy .```
+2. Update paths in [docker-compose.yaml](docker-compose.yaml)
+3. Environment variable ALIBUILD_WORK_DIR must be specified (created during aliBuild installation)
+4. Start proxy and MongoDB: ```docker-compose up```
