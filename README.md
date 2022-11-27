@@ -27,4 +27,11 @@ Proxy expects two arguments to be provided:
         2. GitHub url (required - but not used at the moment)
         3. Branch name (required - but not used at the moment)
         4. Relative path from ALIBUILD_WORK_DIR for specific architecture (i.e. ~/alice/sw/$ALIBUILD_ARCH_PREFIX) to chosen build (same as in alienv, i.e. O2/data-inspector-cleaned-local1)
-    
+
+## Running
+1. Build proxy:
+    1. ```mkdir build && cd build```
+    2. ```cmake ..```
+    3. ```cmake --build .```
+3. Start MongoDB
+2. Run: ```./proxy <execute-script-path> <builds-definitions-path>```
