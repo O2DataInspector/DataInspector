@@ -59,6 +59,7 @@ Device toDomain(const DIMessages::RegisterDevice& registerDevice) {
   return Device{
           .runId = registerDevice.runId,
           .name = registerDevice.name,
+          .isSelected = false,
           .specs = Specs{
             .inputs = toDomain(registerDevice.specs.inputs),
             .outputs = toDomain(registerDevice.specs.outputs),

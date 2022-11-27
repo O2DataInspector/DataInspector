@@ -5,6 +5,14 @@
 #include "domain/model/StatsRequest.h"
 #include <vector>
 
+struct MessageNotSaved : std::runtime_error {
+  MessageNotSaved(const std::string& what) : std::runtime_error(what) {};
+};
+
+struct MessageNotFound : std::runtime_error {
+  MessageNotFound(const std::string& what) : std::runtime_error(what) {};
+};
+
 class MessageRepository {
 public:
   MessageRepository() {};

@@ -6,33 +6,38 @@
 
 #include "api/DataEndpoint.h"
 #include "api/DevicesEndpoint.h"
-#include "api/AnalysisEndpoint.h"
+#include "api/BuildsEndpoint.h"
+#include "api/RunsEndpoint.h"
 
 #include "domain/MessageService.h"
 #include "domain/DevicesService.h"
 #include "domain/SocketManagerService.h"
-#include "domain/AnalysisService.h"
-#include "domain/BuildManager.h"
+#include "domain/BuildService.h"
 #include "domain/RunManager.h"
+#include "domain/RunsService.h"
 
 #include "infrastructure/MongoMessageRepository.h"
-#include "infrastructure/InMemoryDevicesRepository.h"
-#include "infrastructure/MongoAnalysisRepository.h"
-#include "infrastructure/InMemoryRunRepository.h"
+#include "infrastructure/MongoDevicesRepository.h"
+#include "infrastructure/MongoBuildRepository.h"
+#include "infrastructure/MongoRunRepository.h"
 
 #include "HTTPUtil.h"
 #include "mongoc.h"
+#include "domain/BuildDetector.h"
 
 /* ENDPOINTS */
 constexpr char AVAILABLE_DEVICES_ENDPOINT[] = "/available-devices";
 constexpr char STOP_INSPECTION_ENDPOINT[]   = "/stop";
 constexpr char SELECT_DEVICES_ENDPOINT[]    = "/select-devices";
 constexpr char SELECT_ALL_ENDPOINT[]        = "/select-all";
-constexpr char IMPORT_ANALYSIS_ENDPOINT[]   = "/analysis/import";
-constexpr char ANALYSIS_STATUS_ENDPOINT[]   = "/analysis/status";
-constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/analysis/workflows";
-constexpr char START_ANALYSIS_ENDPOINT[]    = "/analysis/start";
-constexpr char STOP_ANALYSIS_ENDPOINT[]     = "/analysis/stop";
+
+constexpr char LIST_ANALYSES_ENDPOINT[]     = "/builds";
+constexpr char LIST_WORKFLOWS_ENDPOINT[]    = "/builds/workflows";
+
+constexpr char START_RUN_ENDPOINT[]         = "/runs";
+constexpr char STOP_RUN_ENDPOINT[]          = "/runs/stop";
+constexpr char LIST_DATASETS_ENDPOINT[]     = "/runs/datasets";
+constexpr char LIST_RUNS_ENDPOINT[]         = "/runs";
 
 constexpr char NEWER_MESSAGES_ENDPOINT[]    = "/messages/newer";
 constexpr char GET_MESSAGE_ENDPOINT[]       = "/messages";
@@ -40,12 +45,12 @@ constexpr char STATS_ENDPOINT[]             = "/stats";
 
 int main(int argc, char* argv[]) {
   if(argc < 3) {
-    std::cout << "Usage: proxy <build-script> <execute-script>" << std::endl;
+    std::cout << "Usage: proxy <execute-script> <local-builds-path>" << std::endl;
     exit(1);
   }
 
-  auto buildScriptPath = argv[1];
-  auto executeScriptPath = argv[2];
+  auto executeScriptPath = argv[1];
+  auto localBuildsPath = argv[2];
 
   mongoc_init();
   auto* uri = mongoc_uri_new(std::getenv("MONGO_URL"));
@@ -56,23 +61,24 @@ int main(int argc, char* argv[]) {
    */
   /// INFRASTRUCTURE
   MongoMessageRepository messageRepository{pool};
-  InMemoryDevicesRepository devicesRepository;
-  MongoAnalysisRepository analysisRepository{pool};
-  InMemoryRunRepository runRepository;
+  MongoDevicesRepository devicesRepository{pool};
+  MongoBuildRepository buildRepository{pool};
+  MongoRunRepository runRepository{pool};
 
   /// SERVICES
-  // BuildManager buildManager{buildScriptPath, analysisRepository};
-  // RunManager runManager{executeScriptPath, devicesRepository};
+  RunManager runManager{executeScriptPath, std::getenv("DI_DATASETS"), devicesRepository, runRepository};
+  RunsService runsService{runManager, runRepository, buildRepository};
   MessageService messageService{messageRepository};
   DevicesService devicesService{devicesRepository};
-  // AnalysisService analysisService{buildManager, runManager, analysisRepository, runRepository};
-  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository};
+  BuildService analysesService{buildRepository, std::string{std::getenv("WORK_DIR")} + "/" + std::getenv("ALIBUILD_ARCH_PREFIX")};
+  SocketManagerService socketManagerService{8081, 2, messageRepository, devicesRepository, runRepository};
   socketManagerService.start();
 
   /// API
   DataEndpoint dataEndpoint{messageService};
   DevicesEndpoint devicesEndpoint{devicesService};
-  // AnalysisEndpoint analysisEndpoint{analysisService};
+  BuildsEndpoint analysesEndpoint{analysesService};
+  RunsEndpoint runsEndpoint{runsService};
 
 
   /**
@@ -92,12 +98,15 @@ int main(int argc, char* argv[]) {
   addEndpoint<void>(handle, HTTPMethod::GET, SELECT_ALL_ENDPOINT, ENDPOINT_MEMBER_FUNC(devicesEndpoint, selectAll));
 
   /// ANALYSIS
-//  addEndpoint(handle, HTTPMethod::POST, IMPORT_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, importAnalysis));
-//  addEndpoint(handle, HTTPMethod::GET, ANALYSIS_STATUS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, getBuildStatus));
-//  addEndpoint(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, listWorkflows));
-//  addEndpoint(handle, HTTPMethod::POST, START_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, startRun));
-//  addEndpoint(handle, HTTPMethod::POST, STOP_ANALYSIS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysisEndpoint, stopRun));
+  addEndpoint<Response::BuildList>(handle, HTTPMethod::GET, LIST_ANALYSES_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, getBuilds));
+  addEndpoint<Response::WorkflowList>(handle, HTTPMethod::GET, LIST_WORKFLOWS_ENDPOINT, ENDPOINT_MEMBER_FUNC(analysesEndpoint, listWorkflows));
 
+
+  /// RUNS
+  addEndpoint<Response::RunId>(handle, HTTPMethod::POST, START_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, start));
+  addEndpoint<void>(handle, HTTPMethod::POST, STOP_RUN_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, stop));
+  addEndpoint<Response::RunsList>(handle, HTTPMethod::GET, LIST_RUNS_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, listRuns));
+  addEndpoint<Response::DatasetList>(handle, HTTPMethod::GET, LIST_DATASETS_ENDPOINT, ENDPOINT_MEMBER_FUNC(runsEndpoint, listDatasets));
 
 
   /**
@@ -118,6 +127,8 @@ int main(int argc, char* argv[]) {
           });
 
 
+  BuildDetector detector{buildRepository, localBuildsPath, "O2Physics/O2"};
+  detector.detectBuilds();
 
   /**
    * RUN

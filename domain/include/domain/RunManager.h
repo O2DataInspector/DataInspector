@@ -3,23 +3,26 @@
 
 #include "utils/ThreadPool.h"
 #include <string>
-#include "domain/model/Analysis.h"
+#include "domain/model/Build.h"
 #include "domain/model/Run.h"
 #include "domain/DevicesRepository.h"
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
+#include "domain/RunRepository.h"
 
 class RunManager {
 public:
-  RunManager(const std::string& scriptPath, DevicesRepository& devicesRepository);
-  void start(const Run& run, const Analysis& analysis, const std::string& config);
+  RunManager(const std::string& scriptPath, const std::string& datasetsPath, DevicesRepository& devicesRepository, RunRepository& runRepository);
+  void start(const Run& run, const Build& build, const std::optional<std::string>& dataset);
   void stop(const std::string& runId);
 
 private:
   void remove(const std::string& runId);
 
-  std::string scriptPath;
+  const std::string scriptPath;
+  const std::string datasetsPath;
   DevicesRepository& devicesRepository;
+  RunRepository& runRepository;
 
   ThreadPool threadPool;
 

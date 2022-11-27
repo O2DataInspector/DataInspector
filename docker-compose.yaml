@@ -18,22 +18,21 @@ services:
       - "8081:8081"
       - "8082:8082"
     environment:
-      MONGO_USERNAME: root
-      MONGO_PASSWORD: example
       MONGO_URL: mongodb://root:example@mongo:27017/
       RUNS_PATH: /di/runs
-      ANALYSES_PATH: /di/analyses
-      WORK_DIR: /di/alice/sw/
-      ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64/
-      O2_VERSION: O2/latest-DataInspector-o2/
+      DI_DATASETS: /di/datasets
+      WORK_DIR: /di/alice-sw
+      ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64
     volumes:
       - type: bind
-        source: /home/arczipt/alice
-        target: /di/alice
+        source: ${ALIBUILD_WORK_DIR}
+        target: /di/alice-sw
+        read_only: true
+      - type: bind
+        source: /home/arczipt/DATASETS
+        target: /di/datasets
         read_only: true
       - type: volume
         target: /di/runs
-      - type: volume
-        target: /di/analyses
     depends_on:
       - mongo

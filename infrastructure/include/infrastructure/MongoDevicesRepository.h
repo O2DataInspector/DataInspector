@@ -1,22 +1,23 @@
-#ifndef DIPROXY_INMEMORYDEVICESREPOSITORY_H
-#define DIPROXY_INMEMORYDEVICESREPOSITORY_H
+#ifndef DIPROXY_MONGODEVICESREPOSITORY_H
+#define DIPROXY_MONGODEVICESREPOSITORY_H
 
-#include "domain/model/Device.h"
-#include "domain/DISocket.hpp"
 #include "domain/DevicesRepository.h"
+#include <string>
 #include <unordered_map>
+#include <mutex>
+#include "mongoc.h"
 
 struct DeviceWithSocket {
   Device device;
   DISocket* socket;
 };
 
-class InMemoryDevicesRepository: public DevicesRepository {
+class MongoDevicesRepository: public DevicesRepository {
 public:
-  InMemoryDevicesRepository() {};
+  MongoDevicesRepository(mongoc_client_pool_t* pool): pool(pool) {};
 
   void addDevice(const Device& device, DISocket* socket) override;
-  void removeDevice(const std::string& runId, const std::string& deviceName) override;
+  void removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) override;
   Device getDevice(const std::string& runId, const std::string& deviceName) override;
   std::vector<Device> getDevices(const std::string& runId) override;
 
@@ -27,9 +28,9 @@ public:
   void stopInterception(const std::string& runId) override;
 
 private:
-  std::mutex devicesMutex;
-  std::unordered_map<std::string, std::vector<DeviceWithSocket>> devices;
+  mongoc_client_pool_t* pool;
+  std::mutex runDevicesMutex;
+  std::unordered_map<std::string, std::vector<DeviceWithSocket>> runDevices;
 };
 
-
-#endif //DIPROXY_INMEMORYDEVICESREPOSITORY_H
+#endif //DIPROXY_MONGODEVICESREPOSITORY_H
