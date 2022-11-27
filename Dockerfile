@@ -1,4 +1,4 @@
-FROM arczipt/di-proxy-builder
+FROM di-proxy-builder
 
 WORKDIR /app
 COPY . /app/proxy

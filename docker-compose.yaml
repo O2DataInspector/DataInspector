@@ -12,7 +12,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
 
   diProxy:
-    image: arczipt/di-proxy
+    image: di-proxy
     restart: on-failure
     ports:
       - "8081:8081"
@@ -29,7 +29,7 @@ services:
         target: /di/alice-sw
         read_only: true
       - type: bind
-        source: /home/arczipt/DATASETS
+        source: <datasets-path>
         target: /di/datasets
         read_only: true
       - type: volume
