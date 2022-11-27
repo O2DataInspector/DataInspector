@@ -11,6 +11,7 @@ struct Range {
 };
 
 struct StatsRequest {
+  std::string runId;
   std::optional<std::string> device;
   std::optional<std::string> messageOrigin;
   std::optional<std::string> description;

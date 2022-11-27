@@ -2,12 +2,24 @@
 #include <iostream>
 #include "domain/DIMessages.h"
 #include "domain/Mappers.h"
+#include "domain/model/Run.h"
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include "domain/RunRepository.h"
+#include "domain/DevicesRepository.h"
 
-SocketManagerService::SocketManagerService(int port, int threads, MessageRepository& messageRepository, DevicesRepository& devicesRepository): ioContext(), acceptor(ioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
-                                                                                                                                               threadPool(threads), devicesRepository(devicesRepository), messageRepository(messageRepository) {
+SocketManagerService::SocketManagerService(int port,
+                                           int threads,
+                                           MessageRepository& messageRepository,
+                                           DevicesRepository& devicesRepository,
+                                           RunRepository& runRepository)
+                                           : ioContext(),
+                                             acceptor(ioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)),
+                                             threadPool(threads),
+                                             devicesRepository(devicesRepository),
+                                             messageRepository(messageRepository),
+                                             runRepository(runRepository) {
   acceptNext();
 }
 
@@ -18,11 +30,11 @@ void SocketManagerService::start() {
     });
 }
 
-std::function<void(std::size_t)> SocketManagerService::receiveErrorHandler(const Device& device) {
-  return [this, device](std::size_t size) {
+std::function<void(std::size_t)> SocketManagerService::receiveErrorHandler(const Device& device, DISocket* socket) {
+  return [this, device, socket](std::size_t size) {
     //TODO: multiple devices with the same name (time pipelining)
     std::cout << "SocketManagerService::receive - ERROR" << std::endl;
-    devicesRepository.removeDevice(device.runId, device.name);
+    devicesRepository.removeDevice(device.runId, device.name, socket);
   };
 }
 
@@ -72,11 +84,18 @@ std::function<void(DIMessage)> SocketManagerService::receiveCallback(DISocket* d
   return [this,diSocket,device](DIMessage message) {
     if(message.header.type() == DIMessage::Header::Type::DEVICE_OFF) {
       std::cout << message.get<std::string>() << " IS NOT ACTIVE (runId=" << device.runId << ")" << std::endl;
+      devicesRepository.removeDevice(device.runId, device.name, diSocket);
       return;
     }
 
-    messageRepository.addMessage(device.runId, toDomain(message));
-    diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device));
+    try {
+      messageRepository.addMessage(device.runId, toDomain(message));
+    } catch (const MessageNotSaved& ex) {
+      std::cout << "SocketManager[ERROR] - Message not saved" << std::endl;
+      std::cout << ex.what() << std::endl;
+    }
+
+    diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
   };
 }
 
@@ -242,9 +261,18 @@ void SocketManagerService::acceptNext() {
       std::cout << registerDeviceMsg.name << " IS ACTIVE (runId=" << registerDeviceMsg.runId << ")" << std::endl;
 
       auto device = toDomain(registerDeviceMsg);
-      devicesRepository.addDevice(device, diSocket);
+      try {
+        runRepository.updateStatus(registerDeviceMsg.runId, Run::Status::RUNNING);
+        devicesRepository.addDevice(device, diSocket);
+      } catch (const RunNotSaved& ex) {
+        std::cout << "SocketManager[ERROR] - Status of run not updated" << std::endl;
+        std::cout << ex.what() << std::endl;
+      } catch (const DeviceNotSaved& ex) {
+        std::cout << "SocketManager[ERROR] - Device not saved" << std::endl;
+        std::cout << ex.what() << std::endl;
+      }
 
-      diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device));
+      diSocket->asyncReceive(receiveCallback(diSocket, device), receiveErrorHandler(device, diSocket));
     });
 
     acceptNext();

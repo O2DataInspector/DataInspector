@@ -4,8 +4,16 @@
 #include <string>
 
 struct Run {
+  enum Status: int32_t {
+    STARTING = 0,
+    RUNNING = 1,
+    FAILED = 2,
+    FINISHED = 3
+  };
+
   std::string id;
-  std::string analysisId;
+  Status status;
+  std::string buildId;
   std::string workflow;
   std::string config;
 };

@@ -45,6 +45,7 @@ Response::MessageHeaderList DataEndpoint::newerMessages(const httplib::Request& 
 
 Stats DataEndpoint::getStats(const httplib::Request& input, httplib::Response& output) {
   StatsRequest request;
+  request.runId = input.get_header_value("runId");
   STATS_STRING_PARAM(device, request)
   STATS_STRING_PARAM(messageOrigin, request)
   STATS_STRING_PARAM(description, request)

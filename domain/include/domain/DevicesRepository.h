@@ -4,12 +4,20 @@
 #include "domain/model/Device.h"
 #include "DISocket.hpp"
 
+struct DeviceNotFound : std::runtime_error {
+  DeviceNotFound(const std::string& what) : std::runtime_error(what) {};
+};
+
+struct DeviceNotSaved : std::runtime_error {
+  DeviceNotSaved(const std::string& what) : std::runtime_error(what) {};
+};
+
 class DevicesRepository {
 public:
   DevicesRepository() {};
 
   virtual void addDevice(const Device& device, DISocket* socket) = 0;
-  virtual void removeDevice(const std::string& runId, const std::string& deviceName) = 0;
+  virtual void removeDevice(const std::string& runId, const std::string& deviceName, DISocket* socket) = 0;
   virtual Device getDevice(const std::string& runId, const std::string& deviceName) = 0;
   virtual std::vector<Device> getDevices(const std::string& runId) = 0;
 
