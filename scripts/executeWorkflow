@@ -10,4 +10,4 @@ source "$WORK_DIR/$ALIBUILD_ARCH_PREFIX/$BUILD_PATH/etc/profile.d/init.sh"
 PROG="$WORK_DIR/$ALIBUILD_ARCH_PREFIX/$BUILD_PATH/bin/$WORKFLOW"
 mkdir "$RUNS_PATH/$RUN_ID"
 cd "$RUNS_PATH/$RUN_ID" || exit
-$PROG --inspector --batch --inspector-id "$RUN_ID" $CONFIG
+$PROG --batch --inspector-id "$RUN_ID" $CONFIG

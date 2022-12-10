@@ -23,6 +23,7 @@ services:
       DI_DATASETS: /di/datasets
       WORK_DIR: /di/alice-sw
       ALIBUILD_ARCH_PREFIX: ubuntu2004_x86-64
+      DPL_LOAD_SERVICES: O2FrameworkDataInspector:DIServicePlugin
     volumes:
       - type: bind
         source: ${ALIBUILD_WORK_DIR}
